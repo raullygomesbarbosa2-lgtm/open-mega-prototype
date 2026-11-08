@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
    p.setColor(0xff708174);p.setTextSize(9);c.drawText("CPU subset diagnostic only · no VDP, sound, or controller emulation",24,H-12,p);
    if(!toast.isEmpty()){p.setColor(0xffbaff80);p.setTextSize(9);c.drawText(ellipsize(toast,(int)(W/7)),W*.55f,H-12,p);}
   }
-  void panel(Canvas c,float x,float y,float w,float h){panelFill(c,x,y,w,h,0xff0b1710);p.setColor(0xff24402b);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRoundRect(x,y,x+w,y+h,14,14,p);p.setStyle(Paint.Style.FILL);}
+  void pill(Canvas c,float x,float y,float w,float h,String s,int bg,int fg){p.setColor(bg);c.drawRoundRect(x,y,x+w,y+h,h/2,h/2,p);p.setColor(fg);p.setTextSize(10);c.drawText(s,x+12,y+h/2+4,p);}\n  void panel(Canvas c,float x,float y,float w,float h){panelFill(c,x,y,w,h,0xff0b1710);p.setColor(0xff24402b);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRoundRect(x,y,x+w,y+h,14,14,p);p.setStyle(Paint.Style.FILL);}
   void panelFill(Canvas c,float x,float y,float w,float h,int color){p.setColor(color);c.drawRoundRect(x,y,x+w,y+h,8,8,p);}
   void glowText(Canvas c,String s,float x,float y,float size,int color){p.setColor(color);p.setTextSize(size);p.setShadowLayer(12,color,0,0);c.drawText(s,x,y,p);p.clearShadowLayer();}
   void button(Canvas c,float x,float y,float w,float h,String s,int color){p.setColor(color);c.drawRoundRect(x,y,x+w,y+h,8,8,p);p.setColor(0xff07110c);p.setTextSize(10);c.drawText(s,x+10,y+h/2+4,p);}
