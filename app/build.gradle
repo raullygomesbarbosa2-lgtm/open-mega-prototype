@@ -3,5 +3,6 @@ plugins { id 'com.android.application' }
 android {
     namespace 'org.openmegaproto'
     compileSdk 34
-    defaultConfig { applicationId 'org.openmegaproto'; minSdk 19; targetSdk 28; versionCode 1; versionName '0.1-prototype'; ndk { abiFilters 'armeabi-v7a' } }
+    defaultConfig { applicationId 'org.openmegaproto'; minSdk 19; targetSdk 28; versionCode 2; versionName '0.2-vdp-prototype'; ndk { abiFilters 'armeabi-v7a' } }
 }
+dependencies { testImplementation 'junit:junit:4.13.2' }
