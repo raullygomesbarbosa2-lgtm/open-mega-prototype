@@ -8,7 +8,7 @@ public class InteractiveDemoTest {
     @Test public void demoCpuWritesDifferentTilePixelsForPadState() {
         MainActivity.Machine up = new MainActivity.Machine();
         up.loadInteractiveDemo();
-        up.updatePad(true,false,false,false,false,false,false,false);
+        up.updatePad(false,false,false,false,false,false,true,false);
         up.step(8);
 
         MainActivity.Machine idle = new MainActivity.Machine();
