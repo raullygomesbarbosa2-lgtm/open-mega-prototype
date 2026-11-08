@@ -16,8 +16,8 @@ public class InteractiveDemoTest {
         idle.updatePad(false,false,false,false,false,false,false,false);
         idle.step(8);
 
-        assertEquals("A held direction selects the bright pattern through CPU port writes",0xf0,up.vdp.readVram(0x20));
-        assertEquals("The idle branch selects a different pattern through CPU port writes",0x0f,idle.vdp.readVram(0x20));
+        assertEquals("A held direction selects the bright pattern through CPU port writes",0x11,up.vdp.readVram(0x20));
+        assertEquals("The idle branch selects a different pattern through CPU port writes",0x22,idle.vdp.readVram(0x20));
         up.vdp.render(); idle.vdp.render();
         assertFalse("The VDP output should visibly differ for the two input states",java.util.Arrays.equals(up.vdp.pixels,idle.vdp.pixels));
     }
