@@ -9,8 +9,26 @@ final class Vdp {
     final int[] pixels=new int[WIDTH*HEIGHT];
     final int[] regs=new int[24];
     int renderedFrames;
+    private int commandWord=-1, address, code;
 
-    void reset(){ java.util.Arrays.fill(vram,(byte)0); java.util.Arrays.fill(cram,(short)0); java.util.Arrays.fill(vsram,(short)0); java.util.Arrays.fill(regs,0); regs[2]=0x30; regs[4]=7; regs[7]=0; render(); }
+    void reset(){ java.util.Arrays.fill(vram,(byte)0); java.util.Arrays.fill(cram,(short)0); java.util.Arrays.fill(vsram,(short)0); java.util.Arrays.fill(regs,0); regs[2]=0x30; regs[4]=7; regs[7]=0; regs[15]=2; commandWord=-1; address=code=0; render(); }
+    /** Original subset of the VDP's 16-bit control-port command protocol. */
+    void writeControl(int value){
+        value &= 0xffff;
+        if((value&0xc000)==0x8000){writeRegister((value>>>8)&31,value&255);commandWord=-1;return;}
+        if(commandWord<0){commandWord=value;return;}
+        long cmd=((long)commandWord<<16)|value;
+        code=(int)(((cmd>>>30)&3)|((cmd>>>2)&0x3c));
+        address=(int)(((cmd>>>16)&0x3fff)|((cmd&3)<<14));commandWord=-1;
+    }
+    void writeDataPort(int value){
+        value &= 0xffff;
+        if(code==1){writeVram(address,(value>>>8)&255);writeVram(address+1,value&255);}
+        else if(code==3){writeCram(address>>>1,value);}
+        else if(code==5){writeVsram(address>>>1,value);}
+        address=(address+(regs[15]&255))&0xffff;
+    }
+    int readDataPort(){int v=code==1?((readVram(address)<<8)|readVram(address+1)):0xffff;address=(address+(regs[15]&255))&0xffff;return v;}
     void writeRegister(int index,int value){if(index>=0&&index<regs.length)regs[index]=value&255;}
     void writeVram(int address,int value){vram[address&0xffff]=(byte)value;}
     int readVram(int address){return vram[address&0xffff]&255;}

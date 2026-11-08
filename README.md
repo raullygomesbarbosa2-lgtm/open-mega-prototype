@@ -1,16 +1,20 @@
-# Open Mega Prototype (0.2)
+# Open Mega Prototype (0.3 research build)
 
-An independent Android research prototype built from scratch. It is **not a playable Mega Drive emulator** and does not include or reuse any existing emulator core, Libretro, or copied emulator implementation.
+Independent Android research prototype built entirely from scratch. **Not a playable Mega Drive emulator.** No third-party emulator core, Libretro, or copied emulator implementation is used.
 
-## What this version implements
-- Native Android Java interface; min SDK 19 (Android 4.4), armeabi-v7a, no WebView.
-- Original partial VDP data model with VRAM, CRAM, VSRAM, register storage and a software renderer for a limited mode-5 two-plane tile display (basic name-table attributes, palette, flips and scrolling).
-- A simplified three-button controller data-port model and touch mapping. This is not yet connected to emulated 68000 memory-mapped IO.
-- Native bitmap output currently displays a generated VDP diagnostic tile pattern, not a ROM's graphics or game footage.
-- Local ROM picker is retained for inspection; files are not uploaded. No ROMs or copyrighted artwork are bundled.
+## Implemented
+- Native Android Java UI; min SDK 19, armeabi-v7a, no WebView.
+- Original partial VDP data model and limited mode-5 tile renderer; CPU 16-bit memory writes to VDP control/data ports now reach the VDP model.
+- Tiny incomplete original 68000 interpreter; it supports a few instructions, including MOVE.W immediate to absolute-long, MOVE.W absolute-long to data register, and branches.
+- Simplified active-low controller data-port read mapped at the CPU's A10000-A1001F region.
+- Local ROM picker; ROMs stay local and no game ROM/art is bundled.
 
-## Limitations — not playable
-The 68000 interpreter remains a tiny incomplete subset. The new VDP is not yet connected to CPU memory-mapped VDP ports/register writes, DMA, interrupts, timing, sprites, windows, full scrolling modes, or hardware status. Controller input is not yet exposed through the 68000 bus. There is no sound emulation. Selecting a ROM does not execute a game or generate its graphics. Commercial ROM compatibility is not supported and would require extensive original CPU and hardware implementation. The displayed generated pattern is only a renderer diagnostic, not fake gameplay.
+## Interactive authored demonstration (not commercial ROM playback)
+The app starts a tiny hand-authored 68000 demonstration loop on its existing CPU/VDP/controller path. It polls the active-low controller port, branches on Up, writes one of two tile patterns through the emulated VDP data port, and renders the VDP output repeatedly on the Android view loop. The Up touch control selects a visibly different tile in the screen. A deterministic JVM test executes that authored program in two input states and checks both VRAM bytes and differing rendered frame buffers.
+
+This is a narrow homebrew/demo program, not a commercial Mega Drive game emulator. Loading a selected ROM does not make it playable; it remains a limited CPU test path. The partial implementation still lacks broad 68000 behavior/addressing, correct VDP modes/timing/status/sprites/DMA/interrupts, Z80, YM2612/PSG sound, and cartridge mapping/protocols. No commercial ROM compatibility is claimed.
+
+Major blockers to gameplay/compatibility remain: a broad 68000 instruction set and correct memory bus/addressing, proper VDP modes/timing/status/sprites/DMA/interrupts, Z80, YM2612/PSG sound, and cartridge mapping/protocols. No claims of broad compatibility are made.
 
 ## Build and tests
-GitHub Actions runs JVM tests for VDP pixel generation, VRAM/CRAM/VSRAM masking and controller-port input behavior, then builds a debug APK. This is a free research prototype without ads, analytics, payment or subscriptions. Debug APK is not store-signed.
+GitHub Actions runs JVM tests and builds a debug APK. This is a free research prototype without ads, analytics, payments or subscriptions. Debug APK is not store-signed.
