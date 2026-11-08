@@ -10,9 +10,9 @@ final class Controller {
     void writeData(int value){th=(value&0x40)!=0;}
     int readData(){
         int value=0x7f;
-        if(!up)value&=~1;if(!down)value&=~2;
-        if(th){if(!a)value&=~0x10;if(!start)value&=~0x20;}
-        else {if(!left)value&=~4;if(!right)value&=~8;if(!b)value&=~0x10;if(!c)value&=~0x20;}
+        if(up)value&=~1;if(down)value&=~2;
+        if(th){if(a)value&=~0x10;if(start)value&=~0x20;}
+        else {if(left)value&=~4;if(right)value&=~8;if(b)value&=~0x10;if(c)value&=~0x20;}
         return value;
     }
 }
