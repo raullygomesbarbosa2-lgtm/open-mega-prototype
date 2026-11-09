@@ -40,7 +40,7 @@ public class Cpu68000Test {
    0x023c,0x001e, // ANDI #$1e,CCR
    0xd240, // ADD.W D0,D1
    0x9041, // SUB.W D1,D0
-   0x51c8,0xfffe); // DBF D0,-2
+   0x51c8,0xfffc); // DBF D0,-2
   c.d[0]=1;c.d[1]=0x0000ffff;
   c.step(1);assertEquals(0x1f,c.sr&0x1f);
   c.step(1);assertEquals(0x1e,c.sr&0x1f);
