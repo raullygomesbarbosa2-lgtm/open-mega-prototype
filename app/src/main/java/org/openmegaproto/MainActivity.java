@@ -61,11 +61,11 @@ public class MainActivity extends Activity {
   final Vdp vdp=new Vdp();final Controller pad=new Controller();final Cpu68000 cpu=new Cpu68000(new Cpu68000.Bus(){public int read8(int x){return rb(x);}public int read16(int x){return rw(x);}public void write8(int x,int v){wb(x,v);}public void write16(int x,int v){ww(x,v);}});
   void reset(){rom=new byte[0];java.util.Arrays.fill(ram,(byte)0);java.util.Arrays.fill(d,0);java.util.Arrays.fill(a,0);pc=0;sr=0x2700;frames=0;stopped=true;status="Nenhuma ROM carregada";vdp.reset();}
   void load(byte[]b){if(b==null||b.length<0x200)throw new IllegalArgumentException("ROM muito pequena ou truncada");rom=b;int initialPc=read32(4)&0xffffff;int initialSp=read32(0)&0xffffff;if((initialPc&1)!=0||initialPc<8||initialPc>=b.length||(initialSp&1)!=0||initialSp<0xff0000)throw new IllegalArgumentException("vetores iniciais do 68000 inválidos; confirme que o arquivo é uma ROM Mega Drive sem cabeçalho SMD");java.util.Arrays.fill(ram,(byte)0);cpu.reset(initialSp,initialPc);sync();stopped=false;frames=0;status="ROM carregada no núcleo original ainda incompleto";vdp.reset();}
-  int rb(int x){x&=0xffffff;if(x<rom.length)return rom[x]&255;if(x>=0xff0000)return ram[x&65535]&255;return 0;}
+  int rb(int x){x&=0xffffff;if(x<rom.length)return rom[x]&255;if(x>=0xe00000)return ram[x&65535]&255;return 0;}
   int rw(int x){x&=0xffffff;if(x>=0xa10000&&x<=0xa1001f)return pad.readData();if((x&0xffffe0)==0xc00000)return ((x&4)==0)?vdp.readDataPort():0;return rb(x)<<8|rb(x+1);}
   int read32(int x){return rw(x)<<16|rw(x+2);}int fetch(){int v=rw(pc);pc=(pc+2)&0xffffff;return v;}
-  void wb(int x,int v){x&=0xffffff;if(x>=0xff0000)ram[x&65535]=(byte)v;}
-  void ww(int x,int v){x&=0xffffff;v&=0xffff;if((x&0xfffff8)==0xc00000){if((x&4)==0)vdp.writeDataPort(v);else vdp.writeControl(v);}else if((x&0xfffffc)==0xa10000){if((x&3)==1)pad.writeData(v);}else if(x>=0xff0000){ram[x&65535]=(byte)(v>>8);ram[(x+1)&65535]=(byte)v;}}
+  void wb(int x,int v){x&=0xffffff;if(x>=0xe00000)ram[x&65535]=(byte)v;}
+  void ww(int x,int v){x&=0xffffff;v&=0xffff;if((x&0xfffff8)==0xc00000){if((x&4)==0)vdp.writeDataPort(v);else vdp.writeControl(v);}else if((x&0xfffffc)==0xa10000){if((x&3)==1)pad.writeData(v);}else if(x>=0xe00000){ram[x&65535]=(byte)(v>>8);ram[(x+1)&65535]=(byte)v;}}
   int readIoData(){return pad.readData();}void updatePad(boolean ab,boolean bb,boolean cb,boolean left,boolean right,boolean up,boolean down){updatePad(ab,bb,cb,false,false,false,false,left,right,up,down);}void updatePad(boolean ab,boolean bb,boolean cb,boolean xb,boolean yb,boolean zb,boolean start,boolean left,boolean right,boolean up,boolean down){pad.set(up,down,left,right,ab,bb,cb,xb,yb,zb,start,false);}
   void sync(){System.arraycopy(cpu.d,0,d,0,8);System.arraycopy(cpu.a,0,a,0,8);pc=cpu.pc;sr=cpu.sr;stopped=cpu.stopped;status=cpu.status;}
   void step(int count){if(rom.length<16||stopped)return;cpu.step(count);sync();frames++;}
