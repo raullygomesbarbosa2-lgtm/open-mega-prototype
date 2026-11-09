@@ -15,10 +15,10 @@ public class VdpHardwarePathTest {
 
     @Test public void cpuCommandsWriteVramCramAndVscrollAndRenderPlanePixel(){
         int[] w={};
-        // Plane A base = C000, 32x32 cells, display enabled; palette entry 1 is white.
+        // Plane A base = C000, 32x32 cells, display enabled; palette entry 15 is white.
         w=append(w,moveWord(0x8230,0x00c00004));
         w=append(w,moveWord(0x8144,0x00c00004)); // display on
-        w=append(w,moveWord(0xc002,0x00c00004)); // CRAM write, palette index 1
+        w=append(w,moveWord(0xc01e,0x00c00004)); // CRAM write, palette index 15
         w=append(w,moveWord(0x0000,0x00c00004));
         w=append(w,moveWord(0x0eee,0x00c00000)); // palette 1 white
         w=append(w,moveWord(0x4020,0x00c00004)); // VRAM write at address 0x20
