@@ -4,17 +4,12 @@ Independent Android research prototype built entirely from scratch. **Not a play
 
 ## Implemented
 - Native Android Java UI; min SDK 19, armeabi-v7a, no WebView.
-- Original partial VDP data model and limited mode-5 tile renderer; CPU 16-bit memory writes to VDP control/data ports now reach the VDP model.
-- Tiny incomplete original 68000 interpreter; it supports a few instructions, including MOVE.W immediate to absolute-long, MOVE.W absolute-long to data register, and branches.
-- Simplified active-low controller data-port read mapped at the CPU's A10000-A1001F region.
-- Local ROM picker; ROMs stay local and no game ROM/art is bundled.
+- Original partial VDP data model and limited mode-5 tile renderer; CPU memory writes to VDP ports reach the VDP model.
+- A small original 68000 interpreter, explicitly not a complete CPU. Supported subset includes MOVE/MOVEA (register, immediate, indirect, postincrement, predecrement, displacement, indexed, absolute and PC-relative source modes as implemented); LEA, JMP/JSR, Bcc/BRA/BSR, MOVEQ, CLR/TST, immediate ORI/ANDI/SUBI/ADDI/EORI/CMPI, ADDQ/SUBQ, CMP/CMPA, NOP and STOP. Unsupported instruction/addressing encodings stop with an opcode/address diagnostic. Flags are covered by focused unit tests, not asserted to be exhaustive Motorola conformance.
+- Reset vector validation/loading, local ROM picker, basic controller and limited VDP integration. ROM bytes are loaded, but this is not evidence that any commercial ROM can run.
 
-## Interactive authored demonstration (not commercial ROM playback)
-The app starts a tiny hand-authored 68000 demonstration loop on its existing CPU/VDP/controller path. It polls the active-low controller port, branches on Up, writes one of two tile patterns through the emulated VDP data port, and renders the VDP output repeatedly on the Android view loop. The Up touch control selects a visibly different tile in the screen. A deterministic JVM test executes that authored program in two input states and checks both VRAM bytes and differing rendered frame buffers.
-
-This is a narrow homebrew/demo program, not a commercial Mega Drive game emulator. Loading a selected ROM does not make it playable; it remains a limited CPU test path. The partial implementation still lacks broad 68000 behavior/addressing, correct VDP modes/timing/status/sprites/DMA/interrupts, Z80, YM2612/PSG sound, and cartridge mapping/protocols. No commercial ROM compatibility is claimed.
-
-Major blockers to gameplay/compatibility remain: a broad 68000 instruction set and correct memory bus/addressing, proper VDP modes/timing/status/sprites/DMA/interrupts, Z80, YM2612/PSG sound, and cartridge mapping/protocols. No claims of broad compatibility are made.
+## Scope and limitations
+This is an independent from-scratch research prototype: no third-party emulator core, Libretro, or copied emulator implementation. It is **not a playable Mega Drive emulator** and does not claim commercial game compatibility. Unit tests validate discrete CPU semantics and a small authored CPU→VDP test program only; neither constitutes a game execution test. Major blockers include broad 68000 behavior, fuller/correct system bus and cartridge mapping, VDP modes/timing/status/sprites/DMA/interrupts, Z80, YM2612/PSG sound, and peripheral protocols.
 
 ## Build and tests
 GitHub Actions runs JVM tests and builds a debug APK. This is a free research prototype without ads, analytics, payments or subscriptions. Debug APK is not store-signed.
