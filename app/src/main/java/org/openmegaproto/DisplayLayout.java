@@ -13,7 +13,7 @@ final class DisplayLayout {
   float scale=Math.min(width/VIDEO_WIDTH,height/VIDEO_HEIGHT),vw=VIDEO_WIDTH*scale,vh=VIDEO_HEIGHT*scale;
   videoLeft=(width-vw)*.5f;videoRight=videoLeft+vw;videoTop=(height-vh)*.5f;videoBottom=videoTop+vh;
   // Controls overlay the frame near the bottom, leaving the menu reachable at top-right.
-  joyX=width*.17f;joyY=height*.82f;
+  joyX=width*.20f;joyY=height*.82f;
   joyRadius=landscape?Math.max(12,Math.min(24,Math.min(height*.065f,width*.055f))):Math.max(12,Math.min(38,Math.min(height*.085f,width*.11f)));
   faceRadius=landscape?Math.max(10,Math.min(18,Math.min(height*.052f,width*.042f))):Math.max(10,Math.min(25,Math.min(height*.052f,width*.065f)));
   float fx=width*.76f,fy=height*.78f,dx=faceRadius*2.35f,dy=faceRadius*1.25f;
