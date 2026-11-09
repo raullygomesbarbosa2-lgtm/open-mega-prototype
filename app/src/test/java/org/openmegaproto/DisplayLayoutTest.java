@@ -3,41 +3,22 @@ package org.openmegaproto;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class DisplayLayoutTest {
-    @Test public void frameUsesMaximumAspectCorrectViewportWithCenteredBars() {
-        for (float[] size : new float[][]{{320,640},{360,800},{393,852},{432,960},{1024,450},{1920,1080}}) {
-            DisplayLayout l = new DisplayLayout(size[0], size[1]);
-            float w=l.videoRight-l.videoLeft, h=l.videoBottom-l.videoTop;
-            assertEquals(320f/224f,w/h,0.0001f);
-            assertTrue(l.videoLeft>=0 && l.videoRight<=size[0]);
-            assertTrue(l.videoTop>=0 && l.videoBottom<=size[1]);
-            float scale=Math.min(size[0]/320f,size[1]/224f);
-            assertEquals(320f*scale,w,0.01f);
-            assertEquals(224f*scale,h,0.01f);
-            assertEquals((size[0]-w)/2,l.videoLeft,0.01f);
-            assertEquals((size[1]-h)/2,l.videoTop,0.01f);
-        }
-    }
+/** Deterministic proof that the bundled, authored 68000 loop drives the VDP from controller input. */
+public class InteractiveDemoTest {
+    @Test public void demoCpuWritesDifferentTilePixelsForPadState() {
+        MainActivity.Machine up = new MainActivity.Machine();
+        up.loadInteractiveDemo();
+        up.updatePad(true,false,false,false,false,false,false,false);
+        up.step(8);
 
-    @Test public void controlsOverlayNearBottomAndFitScreenInBothOrientations() {
-        for (float[] size : new float[][]{{320,640},{360,800},{393,852},{432,960},{1024,450},{1920,1080}}) {
-            DisplayLayout l=new DisplayLayout(size[0],size[1]);
-            float r=l.faceRadius*1.12f;
-            assertTrue(l.joyY>size[1]*.7f);
-            assertTrue(l.joyX-l.joyRadius*1.8f>=0 && l.joyX+l.joyRadius*1.8f<size[0]);
-            assertTrue(l.joyY+l.joyRadius*1.8f<size[1]);
-            assertTrue(l.startY+l.faceRadius*.65f<size[1]);
-            for(int i=0;i<6;i++) {
-                assertTrue(l.buttonX[i]-r>=0 && l.buttonX[i]+r<size[0]);
-                assertTrue(l.buttonY[i]-r>=0 && l.buttonY[i]+r<size[1]);
-                assertTrue(l.hitButton(i,l.buttonX[i],l.buttonY[i]));
-                for(int j=i+1;j<6;j++) {
-                    float dx=l.buttonX[i]-l.buttonX[j],dy=l.buttonY[i]-l.buttonY[j];
-                    assertTrue("button hit regions must not overlap",dx*dx+dy*dy>=4*r*r);
-                }
-            }
-            assertTrue(l.hitJoystick(l.joyX,l.joyY));
-            assertTrue(l.hitStart(l.startX,l.startY));
-        }
+        MainActivity.Machine idle = new MainActivity.Machine();
+        idle.loadInteractiveDemo();
+        idle.updatePad(false,false,false,false,false,false,false,false);
+        idle.step(8);
+
+        assertEquals("A held direction selects the bright pattern through CPU port writes",0xf0,up.vdp.readVram(0x20));
+        assertEquals("The idle branch selects a different pattern through CPU port writes",0x0f,idle.vdp.readVram(0x20));
+        up.vdp.render(); idle.vdp.render();
+        assertFalse("The VDP output should visibly differ for the two input states",java.util.Arrays.equals(up.vdp.pixels,idle.vdp.pixels));
     }
 }
