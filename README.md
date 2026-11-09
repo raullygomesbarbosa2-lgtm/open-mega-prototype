@@ -13,3 +13,9 @@ This is an independent from-scratch research prototype: no third-party emulator 
 
 ## Build and tests
 GitHub Actions runs JVM tests and builds a debug APK. This is a free research prototype without ads, analytics, payments or subscriptions. Debug APK is not store-signed.
+
+## Content and licensing
+No ROM, BIOS, game, or other copyrighted game data is included or distributed by this project. The MIT license in `LICENSE` applies only to the original project code authored for this repository; it does not cover any ROM, BIOS, game, trademark, or other third-party material. Only load content you own or are otherwise authorized to use, and check the laws and licenses that apply where you live. This is not legal advice and does not make every use lawful in every jurisdiction.
+
+The project code is provided without warranty, including without any guarantee that it builds, works, or is compatible with any game. This prototype is not advertised as playable and no compatibility is promised.
+
