@@ -15,12 +15,12 @@ final class RomImage {
     static byte[] decode(byte[] input, String filename) throws IOException {
         if (input == null || input.length == 0) throw new IOException("arquivo vazio");
         String name = filename == null ? "" : filename.toLowerCase(Locale.US);
-        if (name.endsWith(".zip")) input = unzip(input);
+        if (name.endsWith(".zip")) return unzip(input);
         else if (!(name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd")))
             throw new IOException("formato não reconhecido; use BIN, GEN, MD, SMD ou ZIP");
         if (input.length > MAX_ROM_BYTES) throw new IOException("ROM maior que 32 MB");
         if (name.endsWith(".smd") || looksLikeSmd(input)) input = decodeSmd(input);
-        if (hasSegaHeader(input, 0x200)) input = slice(input, 0x200, input.length);
+        if (!hasSegaHeader(input, 0) && hasSegaHeader(input, 0x200)) input = slice(input, 0x200, input.length);
         if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais");
         return input;
     }
@@ -41,7 +41,7 @@ final class RomImage {
                     out.write(buffer, 0, r);
                 }
                 if (found != null) throw new IOException("ZIP contém mais de uma ROM; compacte uma ROM por arquivo");
-                found = out.toByteArray();
+                found = decode(out.toByteArray(), n);
             }
         }
         if (found == null) throw new IOException("não achei arquivo BIN/GEN/MD/SMD dentro do ZIP");
