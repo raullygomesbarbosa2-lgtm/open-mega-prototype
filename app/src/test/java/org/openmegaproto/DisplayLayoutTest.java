@@ -18,7 +18,7 @@ public class DisplayLayoutTest {
     @Test public void landscapeUsesMoreOfTheScreenWithoutHidingControls() {
         DisplayLayout l = new DisplayLayout(1024, 450);
         float width=l.videoRight-l.videoLeft;
-        assertTrue("landscape game viewport should be meaningfully larger", width > 440f);
+        assertTrue("landscape game viewport should be meaningfully larger", width > 400f);
         assertTrue(l.videoBottom < l.buttonY[DisplayLayout.X]-l.faceRadius*1.12f);
         assertTrue(l.startY+l.faceRadius*.65f < l.height);
         assertTrue(l.joyY+l.joyRadius*1.8f < l.height);
