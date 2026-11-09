@@ -16,7 +16,8 @@ public class MainActivity extends Activity {
         final Machine machine=new Machine();
         final Bitmap video=Bitmap.createBitmap(Vdp.WIDTH,Vdp.HEIGHT,Bitmap.Config.ARGB_8888);
         final int white=0xffeef2f6, muted=0xff9da9b7, button=0x663c4a5b;
-        float d=1,W,H,sx,sy,sw,sh,joyX,joyY,joyR,faceX,faceY,faceR;
+        float d=1,W,H,joyX,joyY,joyR,faceR;
+        DisplayLayout displayLayout;
         boolean up,down,left,right,a,b,cButton,xButton,yButton,zButton,start,menuOpen=false,cheatScreen=false,hasRom=false;
         String romName="Nenhuma ROM carregada",toast="",status="NÚCLEO ORIGINAL EM DESENVOLVIMENTO";
         GameView(Context c){super(c);d=getResources().getDisplayMetrics().density;setFocusable(true);machine.vdp.reset();refreshVideo();}
@@ -30,12 +31,12 @@ public class MainActivity extends Activity {
             }catch(Exception e){hasRom=false;machine.reset();toast="ROM não reconhecida: "+e.getMessage();}
             invalidate();
         }
-        void layout(){W=getWidth()/d;H=getHeight()/d;sx=0;sy=0;sw=W;sh=H;joyX=Math.max(48,W*.095f);joyY=H*.72f;joyR=Math.min(37,H*.095f);faceX=Math.min(W-48,W*.905f);faceY=H*.72f;faceR=Math.min(26,H*.075f);}
+        void layout(){W=getWidth()/d;H=getHeight()/d;displayLayout=new DisplayLayout(W,H);joyX=displayLayout.joyX;joyY=displayLayout.joyY;joyR=displayLayout.joyRadius;faceR=displayLayout.faceRadius;}
         @Override protected void onDraw(Canvas raw){super.onDraw(raw);raw.save();raw.scale(d,d);layout();Canvas g=raw;
             machine.updatePad(a,b,cButton,xButton,yButton,zButton,start,left,right,up,down);if(hasRom&&!machine.stopped)machine.step(1200);machine.vdp.render();refreshVideo();if(hasRom&&machine.stopped)status="Parou em opcode ainda não suportado: "+machine.status;
             g.drawColor(0xff05070a);
-            if(!cheatScreen){p.setColor(0xff000000);g.drawRect(sx,sy,sx+sw,sy+sh,p);p.setFilterBitmap(false);g.drawBitmap(video,null,new RectF(sx,sy,sx+sw,sy+sh),p);
-                if(!hasRom||machine.stopped){p.setColor(0xcc080b10);g.drawRect(sx,sy+sh*.40f,sx+sw,sy+sh*.60f,p);p.setColor(white);p.setTextAlign(Paint.Align.CENTER);p.setTextSize(Math.min(14,sh*.06f));String line=hasRom?"EXECUÇÃO PAROU — NÚCLEO INCOMPLETO":"SELECIONE UMA ROM NO MENU";g.drawText(line,W/2,sy+sh*.49f,p);p.setTextSize(Math.min(10,sh*.04f));String detail=hasRom?machine.status:"Compatibilidade geral ainda não implementada";g.drawText(ellipsize(detail,(int)(W/9)),W/2,sy+sh*.55f,p);p.setTextAlign(Paint.Align.LEFT);}
+            if(!cheatScreen){p.setColor(0xff000000);g.drawRect(displayLayout.videoLeft,displayLayout.videoTop,displayLayout.videoRight,displayLayout.videoBottom,p);p.setFilterBitmap(false);g.drawBitmap(video,null,new RectF(displayLayout.videoLeft,displayLayout.videoTop,displayLayout.videoRight,displayLayout.videoBottom),p);
+                if(!hasRom||machine.stopped){p.setColor(0xcc080b10);g.drawRect(displayLayout.videoLeft,displayLayout.videoTop+(displayLayout.videoBottom-displayLayout.videoTop)*.40f,displayLayout.videoRight,displayLayout.videoTop+(displayLayout.videoBottom-displayLayout.videoTop)*.60f,p);p.setColor(white);p.setTextAlign(Paint.Align.CENTER);p.setTextSize(Math.min(14,(displayLayout.videoBottom-displayLayout.videoTop)*.06f));String line=hasRom?"EXECUÇÃO PAROU — NÚCLEO INCOMPLETO":"SELECIONE UMA ROM NO MENU";g.drawText(line,(displayLayout.videoLeft+displayLayout.videoRight)/2,displayLayout.videoTop+(displayLayout.videoBottom-displayLayout.videoTop)*.49f,p);p.setTextSize(Math.min(10,(displayLayout.videoBottom-displayLayout.videoTop)*.04f));String detail=hasRom?machine.status:"Compatibilidade geral ainda não implementada";g.drawText(ellipsize(detail,(int)(W/9)),(displayLayout.videoLeft+displayLayout.videoRight)/2,displayLayout.videoTop+(displayLayout.videoBottom-displayLayout.videoTop)*.55f,p);p.setTextAlign(Paint.Align.LEFT);}
                 drawJoystick(g);drawFaceButtons(g);drawMenuButton(g);
             }else drawCheatPage(g);
             if(!toast.isEmpty()){p.setColor(white);p.setTextSize(10);p.setTextAlign(Paint.Align.CENTER);g.drawText(ellipsize(toast,(int)(W/7)),W/2,H-10,p);p.setTextAlign(Paint.Align.LEFT);}
@@ -43,7 +44,15 @@ public class MainActivity extends Activity {
         void drawMenuButton(Canvas g){p.setColor(0x990b1018);g.drawRoundRect(W-54,12,W-12,50,12,12,p);p.setColor(white);p.setTextSize(23);g.drawText("≡",W-43,40,p);}
         void drawJoystick(Canvas g){p.setColor(button);g.drawCircle(joyX,joyY,joyR*1.65f,p);drawDir(g,joyX,joyY-joyR,"↑",up);drawDir(g,joyX,joyY+joyR,"↓",down);drawDir(g,joyX-joyR,joyY,"←",left);drawDir(g,joyX+joyR,joyY,"→",right);}
         void drawDir(Canvas g,float x,float y,String t,boolean held){p.setColor(held?0xffd8dee6:0x884c5b6b);g.drawRoundRect(x-joyR*.43f,y-joyR*.43f,x+joyR*.43f,y+joyR*.43f,8,8,p);p.setColor(held?0xff12171d:white);p.setTextSize(18);g.drawText(t,x-6,y+6,p);}
-        void drawFaceButtons(Canvas g){drawButton(g,faceX-faceR*1.3f,faceY-faceR*.65f,"X",xButton);drawButton(g,faceX+faceR*1.3f,faceY-faceR*.65f,"A",a);drawButton(g,faceX,faceY+faceR*.85f,"B",b);drawButton(g,faceX-faceR*1.3f,faceY+faceR*.85f,"Y",yButton);drawButton(g,faceX+faceR*1.3f,faceY+faceR*.85f,"C",cButton);float x=faceX-29,y=faceY+faceR*2.0f;p.setColor(start?0xffd8dee6:0x884c5b6b);g.drawRoundRect(x,y,x+58,y+22,11,11,p);p.setColor(start?0xff10151c:white);p.setTextSize(9);g.drawText("START",x+13,y+15,p);}
+        void drawFaceButtons(Canvas g){
+            drawButton(g,displayLayout.buttonX[DisplayLayout.X],displayLayout.buttonY[DisplayLayout.X],"X",xButton);
+            drawButton(g,displayLayout.buttonX[DisplayLayout.Y],displayLayout.buttonY[DisplayLayout.Y],"Y",yButton);
+            drawButton(g,displayLayout.buttonX[DisplayLayout.Z],displayLayout.buttonY[DisplayLayout.Z],"Z",zButton);
+            drawButton(g,displayLayout.buttonX[DisplayLayout.A],displayLayout.buttonY[DisplayLayout.A],"A",a);
+            drawButton(g,displayLayout.buttonX[DisplayLayout.B],displayLayout.buttonY[DisplayLayout.B],"B",b);
+            drawButton(g,displayLayout.buttonX[DisplayLayout.C],displayLayout.buttonY[DisplayLayout.C],"C",cButton);
+            float halfW=displayLayout.faceRadius*1.45f,halfH=displayLayout.faceRadius*.65f,x=displayLayout.startX-halfW,y=displayLayout.startY-halfH;p.setColor(start?0xffd8dee6:0x884c5b6b);g.drawRoundRect(x,y,x+2*halfW,y+2*halfH,11,11,p);p.setColor(start?0xff10151c:white);p.setTextSize(9);g.drawText("START",x+2*halfW*.22f,y+2*halfH*.68f,p);
+        }
         void drawButton(Canvas g,float x,float y,String label,boolean held){p.setColor(held?0xffd8dee6:button);g.drawCircle(x,y,faceR,p);p.setColor(held?0xff11161d:white);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(13);g.drawText(label,x-5,y+5,p);p.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));}
         void drawCheatPage(Canvas g){g.drawColor(0xff080b10);p.setColor(white);p.setTextSize(22);g.drawText("CHEATS",24,48,p);p.setColor(muted);p.setTextSize(13);g.drawText("Não disponíveis ainda: o núcleo não executa ROMs.",24,82,p);g.drawText("Toque em ≡ e escolha Voltar ao jogo.",24,106,p);drawMenuButton(g);}
         String ellipsize(String s,int max){if(max<4)max=4;return s.length()>max?s.substring(0,max-1)+"…":s;}
@@ -51,7 +60,7 @@ public class MainActivity extends Activity {
         void clear(){up=down=left=right=a=b=cButton=xButton=yButton=zButton=start=false;machine.updatePad(false,false,false,false,false,false,false,false,false,false,false);}
         void track(MotionEvent e,int skip){clear();for(int i=0;i<e.getPointerCount();i++){if(i==skip)continue;float x=e.getX(i)/d,y=e.getY(i)/d;
                 if(inCircle(x,y,joyX,joyY,joyR*1.8f)){float dx=x-joyX,dy=y-joyY;if(Math.abs(dx)>Math.abs(dy)*.55f){left|=dx<0;right|=dx>0;}if(Math.abs(dy)>Math.abs(dx)*.55f){up|=dy<0;down|=dy>0;}}
-                if(inCircle(x,y,faceX-faceR*1.3f,faceY-faceR*.65f,faceR*1.15f))xButton=true;if(inCircle(x,y,faceX+faceR*1.3f,faceY-faceR*.65f,faceR*1.15f))a=true;if(inCircle(x,y,faceX,faceY+faceR*.85f,faceR*1.15f))b=true;if(inCircle(x,y,faceX-faceR*1.3f,faceY+faceR*.85f,faceR*1.15f))yButton=true;if(inCircle(x,y,faceX+faceR*1.3f,faceY+faceR*.85f,faceR*1.15f))cButton=true;if(x>=faceX-32&&x<=faceX+32&&y>=faceY+faceR*1.7f&&y<=faceY+faceR*2.7f)start=true;
+                if(displayLayout.hitButton(DisplayLayout.X,x,y))xButton=true;if(displayLayout.hitButton(DisplayLayout.Y,x,y))yButton=true;if(displayLayout.hitButton(DisplayLayout.Z,x,y))zButton=true;if(displayLayout.hitButton(DisplayLayout.A,x,y))a=true;if(displayLayout.hitButton(DisplayLayout.B,x,y))b=true;if(displayLayout.hitButton(DisplayLayout.C,x,y))cButton=true;if(displayLayout.hitStart(x,y))start=true;
             }machine.updatePad(a,b,cButton,xButton,yButton,zButton,start,left,right,up,down);}
         void showMenu(){new AlertDialog.Builder(MainActivity.this).setTitle("Menu do jogo").setItems(new String[]{"Carregar outra ROM","Cheats","Voltar ao jogo"},(dlg,which)->{if(which==0)chooseRom();else if(which==1){cheatScreen=true;toast="";invalidate();}else{cheatScreen=false;invalidate();}}).show();}
         @Override public boolean onTouchEvent(MotionEvent e){float x=e.getX()/d,y=e.getY()/d;int action=e.getActionMasked();if(action==MotionEvent.ACTION_DOWN){if(x>W-64&&y<60){showMenu();return true;}track(e,-1);invalidate();return true;}if(action==MotionEvent.ACTION_MOVE||action==MotionEvent.ACTION_POINTER_DOWN){track(e,-1);invalidate();return true;}if(action==MotionEvent.ACTION_POINTER_UP){track(e,e.getActionIndex());invalidate();return true;}if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){clear();invalidate();return true;}return true;}
