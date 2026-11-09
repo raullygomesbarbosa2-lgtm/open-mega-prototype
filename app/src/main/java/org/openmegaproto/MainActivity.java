@@ -2,7 +2,7 @@ package org.openmegaproto;
 
 import android.app.*;import android.os.*;import android.view.*;import android.graphics.*;import android.content.*;import android.net.Uri;import android.database.Cursor;import android.provider.OpenableColumns;import java.io.*;import java.util.*;
 
-/** Native portrait demo screen with responsive display and touch controls. */
+/** Native immersive game screen with full-frame aspect-fit video and overlaid touch controls. */
 public class MainActivity extends Activity {
     static final int PICK=2;
     GameView view;
