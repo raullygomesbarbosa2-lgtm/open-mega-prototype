@@ -17,6 +17,13 @@ public class VdpControllerTest {
         v.writeCram(65,0xffff);assertEquals(0x0eee,v.cram[1]&0xffff);
         v.writeVsram(40,0x7ff);assertEquals(0x7ff,v.vsram[0]&0xffff);
     }
+    @Test public void sixButtonYIsDistinctAndAppearsInExtendedThPhase(){
+        Controller c=new Controller();c.set(false,false,false,false,false,false,false,false,true,false,false,false);
+        c.writeData(0);c.writeData(0x40);c.writeData(0);c.writeData(0x40);c.writeData(0); // six-button identify sequence
+        assertEquals("Y has its own active-low bit in extended phase",0,(c.readData()&2));
+        assertNotEquals("Y is not aliased to the three-button down input",0,(c.readData()&1));
+    }
+
     @Test public void padInputsAreActiveLowAndRespectThPhase(){
         Controller c=new Controller();assertEquals(0x7f,c.readData());
         c.set(true,false,true,true,true,false,false,false);

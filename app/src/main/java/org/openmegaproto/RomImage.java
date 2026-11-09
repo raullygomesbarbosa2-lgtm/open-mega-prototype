@@ -20,8 +20,12 @@ final class RomImage {
             throw new IOException("formato não reconhecido; use BIN, GEN, MD, SMD ou ZIP");
         if (input.length > MAX_ROM_BYTES) throw new IOException("ROM maior que 32 MB");
         if (name.endsWith(".smd") || looksLikeSmd(input)) input = decodeSmd(input);
-        if (!hasSegaHeader(input, 0) && hasSegaHeader(input, 0x200)) input = slice(input, 0x200, input.length);
         if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais");
+        // Some copier/dump headers do not carry the literal SEGA marker. Prefer the
+        // payload at +0x200 only when it has plausible 68000 vectors and the file
+        // prefix does not, avoiding destructive guesses for ordinary raw BIN images.
+        if (input.length > 0x400 && (!plausibleVectors(input,0) && plausibleVectors(input,0x200)
+                || !hasSegaHeader(input,0) && hasSegaHeader(input,0x200))) input = slice(input,0x200,input.length);
         return input;
     }
 
@@ -66,6 +70,12 @@ final class RomImage {
         return out;
     }
 
+    private static boolean plausibleVectors(byte[] data,int offset) {
+        if(data.length<offset+8)return false;
+        long sp=u32(data,offset),pc=u32(data,offset+4);
+        return (sp&1)==0&&(pc&1)==0&&pc>=8&&pc<data.length-offset&&(sp>=0x00ff0000L&&sp<=0x00ffffffL||sp>=0x00e00000L&&sp<0x00e10000L);
+    }
+    private static long u32(byte[] b,int p){return ((long)(b[p]&255)<<24)|((long)(b[p+1]&255)<<16)|((long)(b[p+2]&255)<<8)|(b[p+3]&255L);}
     private static boolean hasSegaHeader(byte[] data, int offset) {
         return data.length >= offset + 0x104 && data[offset + 0x100] == 'S' && data[offset + 0x101] == 'E'
                 && data[offset + 0x102] == 'G' && data[offset + 0x103] == 'A';

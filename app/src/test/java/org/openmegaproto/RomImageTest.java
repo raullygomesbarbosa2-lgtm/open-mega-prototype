@@ -21,6 +21,17 @@ public class RomImageTest {
         assertEquals(8, ((out[4]&255)<<24)|((out[5]&255)<<16)|((out[6]&255)<<8)|(out[7]&255));
     }
 
+    @Test public void stripsHeaderlessCopierPrefixOnlyWhenPayloadHasPlausibleResetVectors() throws Exception {
+        byte[] game=validRom(0x400);byte[] wrapped=new byte[game.length+0x200];
+        System.arraycopy(game,0,wrapped,0x200,game.length);
+        assertArrayEquals(game,RomImage.decode(wrapped,"dump.bin"));
+    }
+
+    @Test public void keepsRawBinWithoutValidVectorsForClearMachineDiagnostic() throws Exception {
+        byte[] raw=new byte[0x400];raw[0x100]='S';raw[0x101]='E';raw[0x102]='G';raw[0x103]='A';
+        assertArrayEquals(raw,RomImage.decode(raw,"broken.bin"));
+    }
+
     @Test public void stripsOptionalSegaRomHeader() throws Exception {
         byte[] game = validRom(0x400);
         byte[] wrapped = new byte[game.length+0x200];
