@@ -88,7 +88,7 @@ final class Vdp {
     }
     /** Deterministic generated pattern for renderer tests, not a game image. */
     void loadDiagnosticPattern(){
-        reset();
+        reset();writeRegister(1,0x40);
         writeCram(0,0);writeCram(1,0x0eee);writeCram(2,0x00e0);writeCram(3,0x0e00);writeCram(4,0x000e);writeCram(5,0x0ee0);writeCram(6,0x00ee);writeCram(7,0x0e0e);
         int baseA=(regs[2]&0x38)<<10;
         for(int t=1;t<8;t++)for(int y=0;y<8;y++)for(int x=0;x<8;x++){
