@@ -41,7 +41,7 @@ final class Cpu68000 {
         // (handled separately below). The arithmetic core maintains X/N/Z/V/C.
         int family=op&0xf000;
         if(family==0x9000||family==0xd000){int mode=(op>>>3)&7,reg=op&7,opmode=(op>>>6)&7,dn=(op>>>9)&7;boolean sub=family==0x9000;
-            if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea e=new Ea(mode,reg,size,true);int value=e.get();a[dn]=(sub?a[dn]-value:a[dn]+value)&0xffffff;return;}
+            if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea e=new Ea(mode,reg,size,true);int value=e.get();if(size==2)value=(short)value;a[dn]=(sub?a[dn]-value:a[dn]+value)&0xffffff;return;}
             if(opmode<=2){int size=opmode==0?1:opmode==1?2:4;Ea e=new Ea(mode,reg,size,true);int rhs=e.get(),lhs=d[dn]&mask(size),result=sub?lhs-rhs:lhs+rhs;d[dn]=(d[dn]&~mask(size))|(result&mask(size));arith(lhs,rhs,result,size,!sub);return;}
             if(opmode>=4&&opmode<=6){int size=opmode==4?1:opmode==5?2:4;Ea e=new Ea(mode,reg,size,false);if(e.isAddr||e.imm)bad();int rhs=d[dn]&mask(size),lhs=e.get(),result=sub?lhs-rhs:lhs+rhs;e.put(result);arith(lhs,rhs,result,size,!sub);return;}
         }
@@ -80,7 +80,7 @@ final class Cpu68000 {
         // ADDQ/SUBQ data/address register and memory.
         if((op&0xf000)==0x5000&&(op&0x00c0)!=0x00c0){int sc=(op>>>6)&3,size=sc==0?1:sc==1?2:4;int n=(op>>>9)&7;if(n==0)n=8;boolean sub=(op&0x0100)!=0;Ea e=new Ea((op>>>3)&7,op&7,size,false);int old=e.get(),res=sub?old-n:old+n;e.put(res);if(!e.isAddr)arith(old,n,res,size,!sub);return;}
         // CMP Dn,<ea> and CMPA.W/L
-        if((op&0xf000)==0xb000){int opmode=(op>>>6)&7,dr=(op>>>9)&7;if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea s=new Ea((op>>>3)&7,op&7,size,true);int v=s.get();int lhs=a[dr],res=lhs-v;compare(lhs,v,res,size);return;}if(opmode==0||opmode==1||opmode==2){int size=opmode==0?1:opmode==1?2:4;Ea s=new Ea((op>>>3)&7,op&7,size,true);int v=s.get(),lhs=d[dr]&mask(size);compare(lhs,v,lhs-v,size);return;}}
+        if((op&0xf000)==0xb000){int opmode=(op>>>6)&7,dr=(op>>>9)&7;if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea s=new Ea((op>>>3)&7,op&7,size,true);int v=s.get();if(size==2)v=(short)v;int lhs=a[dr],res=lhs-v;compare(lhs,v,res,4);return;}if(opmode==0||opmode==1||opmode==2){int size=opmode==0?1:opmode==1?2:4;Ea s=new Ea((op>>>3)&7,op&7,size,true);int v=s.get(),lhs=d[dr]&mask(size);compare(lhs,v,lhs-v,size);return;}}
         bad();
     }
     boolean cond(int c){boolean cflag=(sr&1)!=0,v=(sr&2)!=0,z=(sr&4)!=0,n=(sr&8)!=0;switch(c){case 0:return true;case 1:return false;case 2:return !cflag&&!z;case 3:return cflag||z;case 4:return !cflag;case 5:return cflag;case 6:return !z;case 7:return z;case 8:return !v;case 9:return v;case 10:return !n;case 11:return n;case 12:return n==v;case 13:return n!=v;case 14:return !z&&n==v;case 15:return z||n!=v;default:return false;}}
