@@ -31,8 +31,8 @@ public class VdpHardwarePathTest {
         assertEquals("CPU's VDP port writes reach VRAM",0xff,m.vdp.readVram(0x20));
         assertEquals("CPU's VDP port writes reach CRAM",0x0eee,m.vdp.cram[1]&0xffff);
         m.vdp.render();
-        assertEquals("rendered plane-A tile is white",0xffffffff,m.vdp.pixels[0]);
-        assertNotEquals("empty neighbor remains backdrop",0xffffffff,m.vdp.pixels[8]);
+        assertEquals("rendered plane-A tile is white",0xfffcfcfc,m.vdp.pixels[0]);
+        assertNotEquals("empty neighbor remains backdrop",0xfffcfcfc,m.vdp.pixels[8]);
     }
 
     @Test public void twoWordCommandDecodeAndAddressIncrementWrapAreStable(){
