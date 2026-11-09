@@ -98,7 +98,7 @@ public class RomImageTest {
     }
 
     @Test public void doesNotMisdecodeLinearRomJustBecauseSmdExtensionAndLengthFit() throws Exception {
-        byte[] data = validRom(0x4000);
+        byte[] data = validRom(0x4200); // also matches the SMD size shape (512 + 0x4000)
         assertArrayEquals(data, RomImage.decode(data, "actually-linear.smd"));
     }
 
