@@ -40,14 +40,14 @@ public class Cpu68000Test {
    0x023c,0x001e, // ANDI #$1e,CCR
    0xd240, // ADD.W D0,D1
    0x9041, // SUB.W D1,D0
-   0x51c8,0xfffc); // DBF D0,-2
+   0x51c8,0xfffe); // DBF D0,-2
   c.d[0]=1;c.d[1]=0x0000ffff;
   c.step(1);assertEquals(0x1f,c.sr&0x1f);
   c.step(1);assertEquals(0x1e,c.sr&0x1f);
   c.step(1);assertEquals(0,c.d[1]&0xffff);assertEquals(0x15,c.sr&0x1f);
   c.step(1);assertEquals(1,c.d[0]&0xffff); // 1 - 0
-  c.step(1);assertEquals(10,c.pc);assertEquals(0,c.d[0]&0xffff); // DBF decrements D0.W and branches to itself
-  c.step(1);assertEquals(14,c.pc);assertEquals(0xffff,c.d[0]&0xffff); // DBF falls through when D0.W reaches -1
+  c.step(1);assertEquals(12,c.pc);assertEquals(0,c.d[0]&0xffff); // DBF decrements D0.W and branches to itself
+  c.step(1);assertEquals(16,c.pc);assertEquals(0xffff,c.d[0]&0xffff); // DBF falls through when D0.W reaches -1
  }
  @Test public void rtsReturnsToLongAddressAndRestoresStack(){
   Mem m=new Mem();Cpu68000 c=cpu(m,0x4e75);m.write16(0x80000,0);m.write16(0x80002,0x1234);c.step(1);assertEquals(0x1234,c.pc);assertEquals(0x80004,c.a[7]);
