@@ -20,7 +20,7 @@ public class VdpHardwarePathTest {
         w=append(w,moveWord(0x8144,0x00c00004)); // display on
         w=append(w,moveWord(0xc01e,0x00c00004)); // CRAM write, palette index 15
         w=append(w,moveWord(0x0000,0x00c00004));
-        w=append(w,moveWord(0x0eee,0x00c00000)); // palette 1 white
+        w=append(w,moveWord(0x0eee,0x00c00000)); // palette 15 white
         w=append(w,moveWord(0x4020,0x00c00004)); // VRAM write at address 0x20
         w=append(w,moveWord(0x0000,0x00c00004));
         w=append(w,moveWord(0xffff,0x00c00000)); // tile 1 first row pixels
@@ -29,7 +29,7 @@ public class VdpHardwarePathTest {
         w=append(w,moveWord(0x0001,0x00c00000));
         MainActivity.Machine m=new MainActivity.Machine();m.load(program(w));m.step(100);
         assertEquals("CPU's VDP port writes reach VRAM",0xff,m.vdp.readVram(0x20));
-        assertEquals("CPU's VDP port writes reach CRAM",0x0eee,m.vdp.cram[1]&0xffff);
+        assertEquals("CPU's VDP port writes reach CRAM",0x0eee,m.vdp.cram[15]&0xffff);
         m.vdp.render();
         assertEquals("rendered plane-A tile is white",0xfffcfcfc,m.vdp.pixels[0]);
         assertNotEquals("empty neighbor remains backdrop",0xfffcfcfc,m.vdp.pixels[8]);
