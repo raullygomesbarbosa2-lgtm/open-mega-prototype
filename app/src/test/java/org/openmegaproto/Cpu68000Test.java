@@ -3,6 +3,20 @@ import org.junit.Test;import static org.junit.Assert.*;
 public class Cpu68000Test {
  static class Mem implements Cpu68000.Bus {byte[] m=new byte[1<<20];int u(int a){return a&0xfffff;}public int read8(int a){return m[u(a)]&255;}public int read16(int a){return read8(a)<<8|read8(a+1);}public void write8(int a,int v){m[u(a)]=(byte)v;}public void write16(int a,int v){write8(a,v>>>8);write8(a+1,v);}int read32(int a){return read16(a)<<16|read16(a+2);}void words(int... w){int p=0;for(int v:w){write16(p,v);p+=2;}}}
  static Cpu68000 cpu(Mem m,int... code){m.words(code);Cpu68000 c=new Cpu68000(m);c.reset(0x80000,0);return c;}
+ @Test public void workRamIsMirroredAcrossTheMegaDriveE00000ToFFFFFFWindow(){
+  MainActivity.Machine m=new MainActivity.Machine();
+  m.ww(0x00e00020,0x1234);
+  assertEquals(0x12,m.rb(0x00ff0020));assertEquals(0x34,m.rb(0x00e10021));
+  m.ww(0x00fffffe,0xabcd);
+  assertEquals(0xabcd,m.rw(0x00e0fffe));
+  byte[] rom=new byte[512];rom[0]=0;rom[1]=(byte)0xe0;rom[2]=0;rom[3]=0x10;rom[7]=8;
+  int[] words={0x2f3c,0x1234,0x5678,0x4e71};
+  for(int i=0;i<words.length;i++){rom[8+i*2]=(byte)(words[i]>>>8);rom[9+i*2]=(byte)words[i];}
+  m.load(rom);m.step(1);
+  assertEquals(0x00e0000c,m.a[7]);
+  assertEquals(0x12345678,m.read32(0x00e0000c));
+  assertEquals(0x12345678,m.read32(0x00ff000c));
+ }
  @Test public void resetVectorsAreUsedByMachineAndInvalidVectorsRejected(){MainActivity.Machine m=new MainActivity.Machine();byte[] rom=new byte[512];rom[0]=0;rom[1]=(byte)0xff;rom[2]=(byte)0xff;rom[3]=0;rom[7]=(byte)0x20;rom[0x20]=0x70;rom[0x21]=0x2a;m.load(rom);assertEquals(0xffff00,m.a[7]);assertEquals(0x20,m.pc);m.step(1);assertEquals(42,m.d[0]);assertEquals(0x22,m.pc);try{m.load(new byte[512]);fail("zero reset vectors accepted");}catch(IllegalArgumentException expected){}}
  @Test public void moveImmediateToDregSetsSizeAndFlags(){Mem m=new Mem();Cpu68000 c=cpu(m,0x7000|((1)<<9)|0x80,0x303c,0x0000);c.step(1);assertEquals(0xffffff80,c.d[1]);assertEquals(8,c.sr&8);assertEquals(0,c.sr&5);}
  @Test public void moveAbsoluteWordToDregAndMoveAbsoluteLongStore(){Mem m=new Mem();m.write16(0x300,0x8001);Cpu68000 c=cpu(m,0x3039,0,0x0300,0x33fc,0x1234,0,0x0400);c.step(1);assertEquals(0x8001,c.d[0]&0xffff);assertEquals(8,c.sr&8);c.step(1);assertEquals(0x1234,m.read16(0x400));assertEquals(0,c.sr&8);assertEquals(0,c.sr&0x10);}
@@ -27,3 +41,4 @@ public class Cpu68000Test {
   c.a[0]=0x300;c.step(1);assertEquals(0xffff8001,c.d[0]);assertEquals(0x7fff,c.d[1]);assertEquals(0x304,c.a[0]);
  }
 }
+
