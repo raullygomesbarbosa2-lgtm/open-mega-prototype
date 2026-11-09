@@ -82,24 +82,32 @@ public class RomImageTest {
         assertArrayEquals(raw,RomImage.decode(smd,"copier_dump"));
     }
 
-    @Test public void stripsCopierHeaderWhenObservedInvalidPrefixHasValidPayloadVectors() throws Exception {
+    @Test public void stripsNonstandardCopierPrefixForScreenshotVectorShape() throws Exception {
         byte[] game = validRom(0x800);
-        byte[] wrapped = new byte[0x200 + game.length];
-        // Reproduce the screenshot's invalid prefix shape: SP=0, PC=0x50000200.
-        wrapped[4] = 0x50; wrapped[5] = 0; wrapped[6] = 2; wrapped[7] = 0;
-        System.arraycopy(game, 0, wrapped, 0x200, game.length);
+        int prefixLength = 0x600; // valid payload begins at a later 512-byte boundary
+        byte[] wrapped = new byte[prefixLength + game.length];
+        // Screenshot values are SP=$00000000, PC=$00003209 (odd, invalid reset PC).
+        wrapped[4] = 0; wrapped[5] = 0; wrapped[6] = 0x32; wrapped[7] = 0x09;
+        System.arraycopy(game, 0, wrapped, prefixLength, game.length);
         assertArrayEquals(game, RomImage.decode(wrapped, "mystery.data"));
     }
 
-    @Test public void doesNotStripCopierHeaderWhenPayloadVectorsAreStillInvalid() throws Exception {
-        byte[] wrapped = new byte[0x200 + 0x400];
-        // Offset zero has the screenshot's invalid values; payload PC is odd/out of range.
-        wrapped[4] = 0x50; wrapped[5] = 0; wrapped[6] = 2; wrapped[7] = 0;
-        wrapped[0x200] = 0; wrapped[0x201] = (byte)0xff; wrapped[0x202] = (byte)0xff; wrapped[0x203] = 0;
+    @Test public void doesNotStripWhenNoScannedOffsetHasValidResetVectors() throws Exception {
+        byte[] wrapped = new byte[0x600 + 0x400];
+        wrapped[4] = 0; wrapped[5] = 0; wrapped[6] = 0x32; wrapped[7] = 0x09;
+        // Candidate at 0x200 has odd/out-of-range PC; there are no valid candidates.
         wrapped[0x204] = 0; wrapped[0x205] = 0; wrapped[0x206] = 0x05; wrapped[0x207] = 1;
-        // A known raw-ROM extension may pass through for Machine.load's detailed vector rejection,
-        // but must not be stripped based on an invalid candidate payload.
-        assertArrayEquals("invalid candidate vectors must not cause a guessed strip", wrapped,
+        assertArrayEquals("no valid candidate must not cause a guessed strip", wrapped,
+                RomImage.decode(wrapped, "broken.bin"));
+    }
+
+    @Test public void keepsInputWhenMultipleCopierOffsetsHaveValidResetVectors() throws Exception {
+        byte[] wrapped = new byte[0x600 + 0x800];
+        wrapped[4] = 0; wrapped[5] = 0; wrapped[6] = 0x32; wrapped[7] = 0x09;
+        byte[] game = validRom(0x800);
+        System.arraycopy(game, 0, wrapped, 0x200, game.length);
+        System.arraycopy(game, 0, wrapped, 0x600, game.length);
+        assertArrayEquals("ambiguous valid offsets must be left untouched", wrapped,
                 RomImage.decode(wrapped, "ambiguous.bin"));
     }
 

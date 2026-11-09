@@ -38,11 +38,22 @@ final class RomImage {
         }
         if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais (menos de 512 bytes)");
 
-        // A 512-byte copier header has no universal signature. Strip it only if
-        // offset 0x200 has reset vectors acceptable to Machine.load and offset 0
-        // does not. A SEGA string alone is not enough to discard user data.
-        if (input.length > 0x200 && !validResetVectors(input, 0)
-                && validResetVectors(input, 0x200)) input = slice(input, 0x200, input.length);
+        // Copier prefixes have no universal signature or fixed length. Search a
+        // bounded set of 512-byte boundaries, and strip only when exactly one
+        // non-zero candidate has reset vectors acceptable to Machine.load. A
+        // SEGA string/filename is not evidence; ambiguous candidates are retained.
+        if (!validResetVectors(input, 0)) {
+            int candidate = -1;
+            boolean ambiguous = false;
+            int lastOffset = Math.min(0x10000, input.length - 8);
+            for (int offset = 0x200; offset <= lastOffset; offset += 0x200) {
+                if (!validResetVectors(input, offset)) continue;
+                if (candidate >= 0) { ambiguous = true; break; }
+                candidate = offset;
+            }
+            if (candidate >= 0 && !ambiguous)
+                input = slice(input, candidate, input.length);
+        }
 
         boolean knownExtension = name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd");
         if (!knownExtension && !validResetVectors(input,0) && !hasSegaHeader(input,0))
