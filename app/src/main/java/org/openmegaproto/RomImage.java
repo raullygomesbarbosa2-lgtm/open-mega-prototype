@@ -32,6 +32,10 @@ final class RomImage {
             throw new IOException("SMD truncado ou com tamanho inválido");
         }
         if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais (menos de 512 bytes)");
+        boolean knownExtension = name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd");
+        if (!knownExtension && !plausibleVectors(input,0) && !hasSegaHeader(input,0)
+                && !(input.length > 0x400 && (plausibleVectors(input,0x200) || hasSegaHeader(input,0x200))))
+            throw new IOException("conteúdo não parece uma ROM Mega Drive (vetores 68000 e cabeçalho SEGA ausentes)");
 
         // Some dumps include a 512-byte copier header. Strip it only when the
         // payload has stronger Mega Drive markers than the original prefix.
