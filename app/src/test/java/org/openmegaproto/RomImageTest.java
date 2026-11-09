@@ -97,8 +97,10 @@ public class RomImageTest {
         wrapped[4] = 0x50; wrapped[5] = 0; wrapped[6] = 2; wrapped[7] = 0;
         wrapped[0x200] = 0; wrapped[0x201] = (byte)0xff; wrapped[0x202] = (byte)0xff; wrapped[0x203] = 0;
         wrapped[0x204] = 0; wrapped[0x205] = 0; wrapped[0x206] = 0x05; wrapped[0x207] = 1;
+        // A known raw-ROM extension may pass through for Machine.load's detailed vector rejection,
+        // but must not be stripped based on an invalid candidate payload.
         assertArrayEquals("invalid candidate vectors must not cause a guessed strip", wrapped,
-                RomImage.decode(wrapped, "ambiguous.data"));
+                RomImage.decode(wrapped, "ambiguous.bin"));
     }
 
     @Test public void doesNotStripCopierOffsetBasedOnSegaTextAlone() throws Exception {
