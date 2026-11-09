@@ -22,6 +22,25 @@ final class Cpu68000 {
     void execute(int op){
         if(op==0x4e71)return;
         if(op==0x4e72){sr=fetch16();stopped=true;return;}
+        // MOVEM: bulk transfer of the 16 68000 registers using the encoded register mask.
+        // Predecrement uses the 68000's reversed mask order; postincrement updates An only once all reads finish.
+        if((op&0xfb80)==0x4880){int mode=(op>>>3)&7,eaReg=op&7;if(mode>=2 && !(mode==7&&eaReg>3)){
+            boolean memoryToRegs=(op&0x0400)!=0;int size=(op&0x0040)!=0?4:2;int mask=fetch16();
+            if(memoryToRegs?(mode==4):(mode==3))bad();
+            int[] savedD=d.clone(),savedA=a.clone();int originalEa=a[eaReg];
+            Ea ea=new Ea(mode,eaReg,4,!memoryToRegs);int addr=ea.addr;
+            if(!ea.memory())bad();
+            if(mode==4){ // Ea's constructor performed one predecrement; MOVEM decrements per transferred register.
+                addr=originalEa;
+                for(int bit=0;bit<16;bit++)if((mask&(1<<bit))!=0){addr=(addr-size)&0xffffff;a[eaReg]=addr;int idx=15-bit;int value=idx<8?savedD[idx]:savedA[idx-8];if(size==2)bus.write16(addr,value);else{bus.write16(addr,value>>>16);bus.write16(addr+2,value);}}
+            }else if(memoryToRegs){
+                addr=(mode==3?a[eaReg]-inc(eaReg,4):addr)&0xffffff; // postincrement EA has advanced by one long; restore starting address.
+                for(int idx=0;idx<16;idx++)if((mask&(1<<idx))!=0){int value=size==2?(short)bus.read16(addr):(bus.read16(addr)<<16)|bus.read16(addr+2);addr=(addr+size)&0xffffff;if(idx<8)d[idx]=value;else a[idx-8]=value;}
+                if(mode==3)a[eaReg]=addr;
+            }else{
+                for(int idx=0;idx<16;idx++)if((mask&(1<<idx))!=0){int value=idx<8?d[idx]:a[idx-8];if(size==2)bus.write16(addr,value);else{bus.write16(addr,value>>>16);bus.write16(addr+2,value);}addr=(addr+size)&0xffffff;}
+            }return;
+        }}
         if((op&0xf100)==0x7000){int r=(op>>>9)&7;d[r]=(byte)op;logic(d[r],4);return;}
         if((op&0xf000)==0x6000){branch(op);return;}
         if((op&0xf1c0)==0x41c0){int m=(op>>>3)&7,r=op&7;Ea e=new Ea(m,r,4,false);if(!e.memory()||m==7&&r>3)bad();a[(op>>>9)&7]=e.addr;return;}

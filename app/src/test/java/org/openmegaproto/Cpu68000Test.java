@@ -14,4 +14,16 @@ public class Cpu68000Test {
  c.step(1);assertEquals(10,c.pc);c.step(1);assertEquals(14,c.pc);assertEquals(0x7fffc,c.a[7]);assertEquals(12,m.read32(0x7fffc));}
  @Test public void logicalArithmeticAndCompareFlags(){Mem m=new Mem();Cpu68000 c=cpu(m,0x7001,0x0680,0x7fff,0xffff,0x0c80,0x8000,0);c.step(2);assertEquals(0x80000000,c.d[0]);assertEquals(0x0a,c.sr&0x0f);c.step(1);assertEquals(0x04,c.sr&0x0f);}
  @Test public void unsupportedEncodingStopsWithAddressAndNoFalseProgress(){Mem m=new Mem();Cpu68000 c=cpu(m,0x4e70);c.step(3);assertTrue(c.stopped);assertTrue(c.status.contains("0x4e70"));assertTrue(c.status.contains("0x0"));assertEquals(2,c.pc);}
+ @Test public void movemLongStoresRegistersAndPredecrementReversesMaskOrder(){
+  Mem m=new Mem();Cpu68000 c=cpu(m,0x48d0,0x0003, // MOVEM.L D0-D1,(A0)
+   0x48e1,0x0080); // MOVEM.L A0,-(A1), reversed mask order
+  c.d[0]=0x12345678;c.d[1]=0x89abcdef;c.a[0]=0x300;c.a[1]=0x400;
+  c.step(1);assertEquals(0x12345678,m.read32(0x300));assertEquals(0x89abcdef,m.read32(0x304));
+  c.step(1);assertEquals(0x3fc,c.a[1]);assertEquals(0x300,m.read32(0x3fc));
+ }
+ @Test public void movemWordLoadsSignExtendedAndPostincrementsBaseOnce(){
+  Mem m=new Mem();m.write16(0x300,0x8001);m.write16(0x302,0x7fff);
+  Cpu68000 c=cpu(m,0x4c98,0x0003); // MOVEM.W (A0)+,D0-D1
+  c.a[0]=0x300;c.step(1);assertEquals(0xffff8001,c.d[0]);assertEquals(0x7fff,c.d[1]);assertEquals(0x304,c.a[0]);
+ }
 }
