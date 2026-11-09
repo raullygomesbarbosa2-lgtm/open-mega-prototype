@@ -23,7 +23,7 @@ public class VdpHardwarePathTest {
         w=append(w,moveWord(0x0eee,0x00c00000)); // palette 1 white
         w=append(w,moveWord(0x4020,0x00c00004)); // VRAM write at address 0x20
         w=append(w,moveWord(0x0000,0x00c00004));
-        w=append(w,moveWord(0xffff,0x00c00000)); // tile 1 first row pixels
+        w=append(w,moveWord(0x1111,0x00c00000)); // tile 1 first row pixels
         w=append(w,moveWord(0x4000,0x00c00004)); // plane A name table at C000
         w=append(w,moveWord(0x0003,0x00c00004));
         w=append(w,moveWord(0x0001,0x00c00000));
