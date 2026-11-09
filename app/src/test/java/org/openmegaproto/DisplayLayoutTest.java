@@ -24,6 +24,8 @@ public class DisplayLayoutTest {
                 assertTrue(l.buttonX[i]+hitRadius <= size[0]);
                 assertTrue(l.buttonY[i]-hitRadius > l.videoBottom);
                 assertTrue(l.buttonY[i]+hitRadius < size[1]);
+                float joyDx=l.buttonX[i]-l.joyX,joyDy=l.buttonY[i]-l.joyY;
+                assertTrue("joystick hit region overlaps face button", joyDx*joyDx+joyDy*joyDy >= (l.joyRadius*1.8f+hitRadius)*(l.joyRadius*1.8f+hitRadius));
                 for (int j=i+1;j<6;j++) {
                     float dx=l.buttonX[i]-l.buttonX[j],dy=l.buttonY[i]-l.buttonY[j];
                     assertTrue("overlapping face hit targets", dx*dx+dy*dy >= 4*hitRadius*hitRadius);

@@ -14,7 +14,7 @@ final class DisplayLayout {
   videoLeft=cx-vw*.5f;videoRight=cx+vw*.5f;videoTop=cy-vh*.5f;videoBottom=cy+vh*.5f;
   joyX=width*.20f;joyY=height*.77f;joyRadius=Math.max(12,Math.min(38,Math.min(height*.085f,width*.11f)));
   faceRadius=Math.max(10,Math.min(25,Math.min(height*.052f,width*.065f)));
-  float fx=width*.64f,fy=height*.77f,dx=faceRadius*2.35f,dy=faceRadius*1.25f;
+  float fx=width*.70f,fy=height*.77f,dx=faceRadius*2.35f,dy=faceRadius*1.25f;
   // Spacing exceeds the visible and touch radii, so none of the six targets overlap.
   buttonX[X]=fx-dx;buttonY[X]=fy-dy;buttonX[Y]=fx;buttonY[Y]=fy-dy;buttonX[Z]=fx+dx;buttonY[Z]=fy-dy;
   buttonX[A]=fx-dx;buttonY[A]=fy+dy;buttonX[B]=fx;buttonY[B]=fy+dy;buttonX[C]=fx+dx;buttonY[C]=fy+dy;
