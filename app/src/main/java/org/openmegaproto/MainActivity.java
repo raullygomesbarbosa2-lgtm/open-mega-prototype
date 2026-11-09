@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
         boolean inCircle(float x,float y,float cx,float cy,float r){float dx=x-cx,dy=y-cy;return dx*dx+dy*dy<=r*r;}
         void clear(){up=down=left=right=a=b=cButton=xButton=yButton=zButton=start=false;machine.updatePad(false,false,false,false,false,false,false,false,false,false,false);}
         void track(MotionEvent e,int skip){clear();for(int i=0;i<e.getPointerCount();i++){if(i==skip)continue;float x=e.getX(i)/d,y=e.getY(i)/d;
-                if(inCircle(x,y,joyX,joyY,joyR*1.8f)){float dx=x-joyX,dy=y-joyY;if(Math.abs(dx)>Math.abs(dy)*.55f){left|=dx<0;right|=dx>0;}if(Math.abs(dy)>Math.abs(dx)*.55f){up|=dy<0;down|=dy>0;}}
+                if(displayLayout.hitJoystick(x,y)){float dx=x-joyX,dy=y-joyY;if(Math.abs(dx)>Math.abs(dy)*.55f){left|=dx<0;right|=dx>0;}if(Math.abs(dy)>Math.abs(dx)*.55f){up|=dy<0;down|=dy>0;}}
                 if(displayLayout.hitButton(DisplayLayout.X,x,y))xButton=true;if(displayLayout.hitButton(DisplayLayout.Y,x,y))yButton=true;if(displayLayout.hitButton(DisplayLayout.Z,x,y))zButton=true;if(displayLayout.hitButton(DisplayLayout.A,x,y))a=true;if(displayLayout.hitButton(DisplayLayout.B,x,y))b=true;if(displayLayout.hitButton(DisplayLayout.C,x,y))cButton=true;if(displayLayout.hitStart(x,y))start=true;
             }machine.updatePad(a,b,cButton,xButton,yButton,zButton,start,left,right,up,down);}
         void showMenu(){new AlertDialog.Builder(MainActivity.this).setTitle("Menu do jogo").setItems(new String[]{"Carregar outra ROM","Cheats","Voltar ao jogo"},(dlg,which)->{if(which==0)chooseRom();else if(which==1){cheatScreen=true;toast="";invalidate();}else{cheatScreen=false;invalidate();}}).show();}

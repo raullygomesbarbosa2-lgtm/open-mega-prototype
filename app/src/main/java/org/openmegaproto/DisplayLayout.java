@@ -20,6 +20,7 @@ final class DisplayLayout {
   buttonX[A]=fx-dx;buttonY[A]=fy+dy;buttonX[B]=fx;buttonY[B]=fy+dy;buttonX[C]=fx+dx;buttonY[C]=fy+dy;
   startX=fx;startY=fy+faceRadius*3.15f;
  }
+ boolean hitJoystick(float x,float y){float dx=x-joyX,dy=y-joyY,r=joyRadius*1.8f;return dx*dx+dy*dy<=r*r;}
  boolean hitButton(int i,float x,float y){float dx=x-buttonX[i],dy=y-buttonY[i],r=faceRadius*1.12f;return dx*dx+dy*dy<=r*r;}
  boolean hitStart(float x,float y){return Math.abs(x-startX)<=faceRadius*1.45f&&Math.abs(y-startY)<=faceRadius*.65f;}
 }
