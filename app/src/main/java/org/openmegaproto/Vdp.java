@@ -31,6 +31,12 @@ final class Vdp {
     }
     /** Data port reads VRAM with the current address; non-VRAM read command codes are unsupported. */
     int readDataPort(){int v=code==0?((readVram(address)<<8)|readVram(address+1)):0xffff;address=(address+(regs[15]&255))&0xffff;return v;}
+    /**
+     * Return the modeled idle status. FIFO-empty is set because writes are applied
+     * synchronously; timing-dependent VBlank, HBlank, DMA and sprite flags remain clear.
+     * Reading status also cancels an incomplete two-word control command, as on hardware.
+     */
+    int readStatusPort(){commandWord=-1;return 0x0200;}
     void writeRegister(int index,int value){if(index>=0&&index<regs.length)regs[index]=value&255;}
     void writeVram(int address,int value){vram[address&0xffff]=(byte)value;}
     int readVram(int address){return vram[address&0xffff]&255;}

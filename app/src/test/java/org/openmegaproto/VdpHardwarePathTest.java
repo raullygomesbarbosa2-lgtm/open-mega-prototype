@@ -35,6 +35,16 @@ public class VdpHardwarePathTest {
         assertNotEquals("empty neighbor remains backdrop",0xfffcfcfc,m.vdp.pixels[8]);
     }
 
+    @Test public void statusBusReadReportsFifoEmptyAndCancelsPendingControlHalf(){
+        MainActivity.Machine m=new MainActivity.Machine();
+        m.vdp.writeControl(0x4020); // leave a half-written VRAM command pending
+        assertEquals(0x0200,m.rw(0x00c00004));
+        m.vdp.writeControl(0x4020);m.vdp.writeControl(0x0000); // a fresh complete command
+        m.vdp.writeDataPort(0x1234);
+        assertEquals(0x12,m.vdp.readVram(0x20));
+        assertEquals(0x34,m.vdp.readVram(0x21));
+    }
+
     @Test public void twoWordCommandDecodeAndAddressIncrementWrapAreStable(){
         Vdp v=new Vdp();v.writeRegister(15,2);
         v.writeControl(0x4020);v.writeControl(0x0000); // VRAM write at address 0x20

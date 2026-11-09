@@ -73,7 +73,7 @@ public class MainActivity extends Activity {
    java.util.Arrays.fill(ram,(byte)0);cpu.reset(initialSp,initialPc);sync();stopped=false;frames=0;status="ROM carregada no núcleo original ainda incompleto";vdp.reset();
   }
   int rb(int x){x&=0xffffff;if(x<rom.length)return rom[x]&255;if(x>=0xe00000)return ram[x&65535]&255;return 0;}
-  int rw(int x){x&=0xffffff;if(x>=0xa10000&&x<=0xa1001f)return pad.readData();if((x&0xffffe0)==0xc00000)return ((x&4)==0)?vdp.readDataPort():0;return rb(x)<<8|rb(x+1);}
+  int rw(int x){x&=0xffffff;if(x>=0xa10000&&x<=0xa1001f)return pad.readData();if((x&0xffffe0)==0xc00000)return ((x&4)==0)?vdp.readDataPort():vdp.readStatusPort();return rb(x)<<8|rb(x+1);}
   int read32(int x){return rw(x)<<16|rw(x+2);}int fetch(){int v=rw(pc);pc=(pc+2)&0xffffff;return v;}
   void wb(int x,int v){x&=0xffffff;if(x>=0xe00000)ram[x&65535]=(byte)v;}
   void ww(int x,int v){x&=0xffffff;v&=0xffff;if((x&0xfffff8)==0xc00000){if((x&4)==0)vdp.writeDataPort(v);else vdp.writeControl(v);}else if((x&0xfffffc)==0xa10000){if((x&3)==1)pad.writeData(v);}else if(x>=0xe00000){ram[x&65535]=(byte)(v>>8);ram[(x+1)&65535]=(byte)v;}}
