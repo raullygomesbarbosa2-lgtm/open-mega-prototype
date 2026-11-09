@@ -32,7 +32,7 @@ public class VdpControllerTest {
         v.render();assertEquals(v.cramColor(1),v.pixels[0]);
 
         // Horizontal flip of tile 1 still maps the all-opaque pattern; place at x=8.
-        v.reset();v.writeRegister(5,0x1e);v.writeCram(1,0x000e);
+        v.reset();v.writeRegister(1,0x40);v.writeRegister(5,0x1e);v.writeCram(1,0x000e);
         for(int i=0;i<32;i++)v.writeVram(32+i,0x11);
         writeWords(v,0x3c00,new int[]{128,0,0x0801,136});
         v.render();assertEquals(v.cramColor(1),v.pixels[8]);
