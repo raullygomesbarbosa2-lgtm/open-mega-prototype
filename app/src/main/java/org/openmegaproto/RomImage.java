@@ -75,7 +75,7 @@ final class RomImage {
         } catch (java.util.zip.ZipException ex) {
             throw new IOException("arquivo ZIP corrompido ou sem conteúdo legível", ex);
         }
-        if (found == null) throw new IOException("não achei uma ROM Mega Drive reconhecível no ZIP" + (firstError == null ? "" : ": " + firstError));
+        if (found == null) throw new IOException("ZIP: não achei uma ROM Mega Drive reconhecível" + (firstError == null ? "" : ": " + firstError));
         return found;
     }
 
