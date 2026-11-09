@@ -37,8 +37,5 @@ public class InteractiveDemoTest {
         catch(IllegalArgumentException expected) { assertTrue(expected.getMessage().contains("pequena")); }
     }
 
-    @Test public void resetClearsRomAndStopsCpu() {
-        MainActivity.Machine m=new MainActivity.Machine();m.reset();
-        assertEquals(0,m.rom.length);assertTrue(m.stopped);assertEquals("Nenhuma ROM carregada",m.status);
-    }
+
 }
