@@ -15,50 +15,76 @@ final class RomImage {
     static byte[] decode(byte[] input, String filename) throws IOException {
         if (input == null || input.length == 0) throw new IOException("arquivo vazio");
         String name = filename == null ? "" : filename.toLowerCase(Locale.US);
-        if (name.endsWith(".zip")) return unzip(input);
-        else if (!(name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd")))
-            throw new IOException("formato não reconhecido; use BIN, GEN, MD, SMD ou ZIP");
+        if (isZip(input) || name.endsWith(".zip")) {
+            if (!isZip(input)) throw new IOException("arquivo .zip inválido ou incompleto (assinatura ZIP ausente)");
+            return unzip(input);
+        }
         if (input.length > MAX_ROM_BYTES) throw new IOException("ROM maior que 32 MB");
-        if (name.endsWith(".smd") || looksLikeSmd(input)) input = decodeSmd(input);
-        if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais");
-        // Some copier/dump headers do not carry the literal SEGA marker. Prefer the
-        // payload at +0x200 only when it has plausible 68000 vectors and the file
-        // prefix does not, avoiding destructive guesses for ordinary raw BIN images.
-        if (input.length > 0x400 && (!plausibleVectors(input,0) && plausibleVectors(input,0x200)
-                || !hasSegaHeader(input,0) && hasSegaHeader(input,0x200))) input = slice(input,0x200,input.length);
+
+        boolean smdNamed = name.endsWith(".smd");
+        if (couldBeSmd(input)) {
+            byte[] deinterleaved = decodeSmd(input);
+            // Extensionless and misnamed copier dumps are detected from their payload,
+            // not just the optional 512-byte SMD header/signature.
+            if (smdNamed || plausibleVectors(deinterleaved, 0) || hasSegaHeader(deinterleaved, 0))
+                input = deinterleaved;
+        } else if (smdNamed) {
+            throw new IOException("SMD truncado ou com tamanho inválido");
+        }
+        if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais (menos de 512 bytes)");
+
+        // Some dumps include a 512-byte copier header. Strip it only when the
+        // payload has stronger Mega Drive markers than the original prefix.
+        if (input.length > 0x400 && ((!plausibleVectors(input,0) && plausibleVectors(input,0x200))
+                || (!hasSegaHeader(input,0) && hasSegaHeader(input,0x200)))) input = slice(input,0x200,input.length);
         return input;
+    }
+
+    private static boolean isZip(byte[] b) {
+        return b.length >= 4 && b[0] == 'P' && b[1] == 'K'
+                && ((b[2] == 3 && b[3] == 4) || (b[2] == 5 && b[3] == 6) || (b[2] == 7 && b[3] == 8));
     }
 
     private static byte[] unzip(byte[] archive) throws IOException {
         byte[] found = null;
+        String firstError = null;
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
             ZipEntry entry;
             byte[] buffer = new byte[8192];
             while ((entry = zip.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
-                String n = entry.getName().toLowerCase(Locale.US);
-                if (!(n.endsWith(".bin") || n.endsWith(".gen") || n.endsWith(".md") || n.endsWith(".smd"))) continue;
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 int r;
                 while ((r = zip.read(buffer)) != -1) {
                     if (out.size() + r > MAX_ROM_BYTES) throw new IOException("ROM dentro do ZIP passa de 32 MB");
                     out.write(buffer, 0, r);
                 }
-                if (found != null) throw new IOException("ZIP contém mais de uma ROM; compacte uma ROM por arquivo");
-                found = decode(out.toByteArray(), n);
+                byte[] candidate = out.toByteArray();
+                String n = entry.getName().toLowerCase(Locale.US);
+                boolean knownRomName = n.endsWith(".bin") || n.endsWith(".gen") || n.endsWith(".md") || n.endsWith(".smd");
+                try {
+                    byte[] decoded = decode(candidate, n);
+                    if (!knownRomName && !plausibleVectors(decoded,0) && !hasSegaHeader(decoded,0)) continue;
+                    if (found != null) throw new IOException("ZIP contém mais de uma ROM; compacte uma ROM por arquivo");
+                    found = decoded;
+                } catch (IOException ex) {
+                    if (ex.getMessage() != null && ex.getMessage().contains("mais de uma ROM")) throw ex;
+                    if (firstError == null) firstError = ex.getMessage();
+                }
             }
+        } catch (java.util.zip.ZipException ex) {
+            throw new IOException("arquivo ZIP corrompido ou sem conteúdo legível", ex);
         }
-        if (found == null) throw new IOException("não achei arquivo BIN/GEN/MD/SMD dentro do ZIP");
+        if (found == null) throw new IOException("não achei uma ROM Mega Drive reconhecível no ZIP" + (firstError == null ? "" : ": " + firstError));
         return found;
     }
 
-    private static boolean looksLikeSmd(byte[] b) {
-        return b.length > 0x420 && b.length % 0x4000 == 512 && (b[8] == 'A' || b[8] == 'E') && b[9] == 'A';
+    private static boolean couldBeSmd(byte[] b) {
+        return b.length > 0x420 && (b.length - 512) % 0x4000 == 0;
     }
 
     private static byte[] decodeSmd(byte[] in) throws IOException {
-        if (in.length < 0x420 || (in.length - 512) % 0x4000 != 0)
-            throw new IOException("SMD truncado ou com tamanho inválido");
+        if (!couldBeSmd(in)) throw new IOException("SMD truncado ou com tamanho inválido");
         int payload = in.length - 512;
         byte[] out = new byte[payload];
         for (int block = 0; block < payload; block += 0x4000) {
@@ -80,7 +106,6 @@ final class RomImage {
         return data.length >= offset + 0x104 && data[offset + 0x100] == 'S' && data[offset + 0x101] == 'E'
                 && data[offset + 0x102] == 'G' && data[offset + 0x103] == 'A';
     }
-
     private static byte[] slice(byte[] b, int start, int end) {
         byte[] out = new byte[end - start];
         System.arraycopy(b, start, out, 0, out.length);

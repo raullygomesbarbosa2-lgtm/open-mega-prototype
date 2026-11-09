@@ -62,6 +62,30 @@ public class RomImageTest {
         assertArrayEquals(raw,RomImage.decode(out.toByteArray(),"archive.zip"));
     }
 
+    @Test public void acceptsContentIdentifiedRawRomWithUnusualOrMissingExtension() throws Exception {
+        byte[] rom=validRom(0x400);
+        assertArrayEquals(rom,RomImage.decode(rom,"game.romdump"));
+        assertArrayEquals(rom,RomImage.decode(rom,""));
+        assertArrayEquals(rom,RomImage.decode(rom,null));
+    }
+
+    @Test public void detectsZipByMagicDespiteMisleadingFilename() throws Exception {
+        byte[] rom=validRom(0x400);ByteArrayOutputStream out=new ByteArrayOutputStream();
+        ZipOutputStream zip=new ZipOutputStream(out);zip.putNextEntry(new ZipEntry("homebrew.data"));zip.write(rom);zip.closeEntry();zip.close();
+        assertArrayEquals(rom,RomImage.decode(out.toByteArray(),"backup.download"));
+    }
+
+    @Test public void deinterleavesSmdWithoutFilenameOrSignatureWhenPayloadVectorsArePlausible() throws Exception {
+        byte[] raw=validRom(0x4000);byte[] smd=new byte[512+0x4000];
+        for(int i=0;i<0x2000;i++){smd[512+0x2000+i]=raw[i*2];smd[512+i]=raw[i*2+1];}
+        assertArrayEquals(raw,RomImage.decode(smd,"copier_dump"));
+    }
+
+    @Test public void malformedZipMagicGetsHelpfulDiagnostic() throws Exception {
+        try { RomImage.decode(new byte[]{'P','K',3,4,0,0},"file.data"); fail("corrupt archive must fail"); }
+        catch(java.io.IOException expected) { assertTrue(expected.getMessage().contains("ZIP")); }
+    }
+
     @Test public void refusesArchiveWithAmbiguousMultipleRoms() throws Exception {
         ByteArrayOutputStream out=new ByteArrayOutputStream();ZipOutputStream zip=new ZipOutputStream(out);
         for(String n:new String[]{"one.bin","two.gen"}){zip.putNextEntry(new ZipEntry(n));zip.write(validRom(0x400));zip.closeEntry();}zip.close();
