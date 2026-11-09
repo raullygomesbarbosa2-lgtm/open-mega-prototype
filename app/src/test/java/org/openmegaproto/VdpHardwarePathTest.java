@@ -25,7 +25,7 @@ public class VdpHardwarePathTest {
         w=append(w,moveWord(0x0000,0x00c00004));
         w=append(w,moveWord(0xffff,0x00c00000)); // tile 1 first row pixels
         w=append(w,moveWord(0x4000,0x00c00004)); // plane A name table at C000
-        w=append(w,moveWord(0x0000,0x00c00004));
+        w=append(w,moveWord(0x0003,0x00c00004));
         w=append(w,moveWord(0x0001,0x00c00000));
         MainActivity.Machine m=new MainActivity.Machine();m.load(program(w));m.step(100);
         assertEquals("CPU's VDP port writes reach VRAM",0xff,m.vdp.readVram(0x20));
