@@ -24,8 +24,7 @@ public class RomImageTest {
     @Test public void stripsOptionalSegaRomHeader() throws Exception {
         byte[] game = validRom(0x400);
         byte[] wrapped = new byte[game.length+0x200];
-        System.arraycopy(game,0,wrapped,0,0x100);
-        wrapped[0x100]='S';wrapped[0x101]='E';wrapped[0x102]='G';wrapped[0x103]='A';
+        game[0x100]='S';game[0x101]='E';game[0x102]='G';game[0x103]='A';
         System.arraycopy(game,0,wrapped,0x200,game.length);
         assertArrayEquals(game,RomImage.decode(wrapped,"dump.gen"));
     }
@@ -41,6 +40,15 @@ public class RomImageTest {
         byte[] rom=validRom(0x400);ByteArrayOutputStream out=new ByteArrayOutputStream();
         ZipOutputStream zip=new ZipOutputStream(out);zip.putNextEntry(new ZipEntry("folder/game.bin"));zip.write(rom);zip.closeEntry();zip.close();
         assertArrayEquals(rom,RomImage.decode(out.toByteArray(),"archive.zip"));
+    }
+
+
+    @Test public void extractsAndDecodesSmdInZipEvenWithoutHeaderSignature() throws Exception {
+        byte[] raw=validRom(0x4000);byte[] smd=new byte[512+0x4000];
+        for(int i=0;i<0x2000;i++){smd[512+0x2000+i]=raw[i*2];smd[512+i]=raw[i*2+1];}
+        ByteArrayOutputStream out=new ByteArrayOutputStream();ZipOutputStream zip=new ZipOutputStream(out);
+        zip.putNextEntry(new ZipEntry("game.smd"));zip.write(smd);zip.closeEntry();zip.close();
+        assertArrayEquals(raw,RomImage.decode(out.toByteArray(),"archive.zip"));
     }
 
     @Test public void refusesArchiveWithAmbiguousMultipleRoms() throws Exception {
