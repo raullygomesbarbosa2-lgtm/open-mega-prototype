@@ -27,8 +27,8 @@ public class VdpControllerTest {
     @Test public void padInputsAreActiveLowAndRespectThPhase(){
         Controller c=new Controller();assertEquals(0x7f,c.readData());
         c.set(true,false,true,true,true,false,false,false);
-        int high=c.readData();assertEquals(0,(high&1));assertEquals(0,(high&0x10));
+        int high=c.readData();assertEquals(0,(high&1));assertNotEquals(0,(high&0x10)); // A is sampled in the low TH phase.
         c.writeData(0);int low=c.readData();assertEquals(0,(low&4));assertEquals(0,(low&8));
-        assertNotEquals(0,(low&0x10)); // B is not pressed in the low phase.
+        assertEquals(0,(low&0x10)); // A is active-low in the low phase.
     }
 }
