@@ -10,7 +10,7 @@ public class MainActivity extends Activity {
     void chooseRom(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK);}
     @Override protected void onActivityResult(int r,int c,Intent d){super.onActivityResult(r,c,d);if(r==PICK&&c==RESULT_OK&&d!=null)try{Uri u=d.getData();String name=displayName(u);if(!supported(name))throw new IOException("Formato não suportado. Selecione .bin, .gen, .md ou .smd");getContentResolver().takePersistableUriPermission(u,Intent.FLAG_GRANT_READ_URI_PERMISSION);view.addRom(name,u);}catch(Exception e){view.toast="Falha ao abrir arquivo: "+e.getMessage();view.invalidate();}}
     String displayName(Uri u){Cursor c=getContentResolver().query(u,null,null,null,null);if(c!=null){try{if(c.moveToFirst()){int ix=c.getColumnIndex(OpenableColumns.DISPLAY_NAME);if(ix>=0)return c.getString(ix);}}finally{c.close();}}return "ROM local";}
-    boolean supported(String n){String s=n.toLowerCase(Locale.US);return s.endsWith(".bin")||s.endsWith(".gen")||s.endsWith(".md")||s.endsWith(".smd");}
+    boolean supported(String n){String s=n.toLowerCase(Locale.US);return s.endsWith(".bin")||s.endsWith(".gen")||s.endsWith(".md")||s.endsWith(".smd")||s.endsWith(".zip");}
 
     class GameView extends View {
         final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -25,27 +25,18 @@ public class MainActivity extends Activity {
         void addRom(String name,Uri uri){
             try(InputStream in=getContentResolver().openInputStream(uri)){
                 if(in==null)throw new IOException("arquivo indisponível");ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buf=new byte[8192];int n;
-                while((n=in.read(buf))>0){if(out.size()+n>32*1024*1024)throw new IOException("arquivo maior que 32 MB");out.write(buf,0,n);}
-                byte[] bytes=out.toByteArray();
-                if(name.toLowerCase(Locale.US).endsWith(".smd"))bytes=decodeSmd(bytes);
-                if(bytes.length<0x200)throw new IOException("arquivo curto demais para uma ROM válida");
-                machine.load(bytes);romName=name;hasRom=true;status="ROM carregada no núcleo 68000 original limitado";toast="ROM carregada; compatibilidade ainda incompleta.";
-            }catch(Exception e){hasRom=false;machine.reset();toast="Falha ao carregar ROM: "+e.getMessage();}
+                while((n=in.read(buf))>0){if(out.size()+n>RomImage.MAX_ROM_BYTES+1024*1024)throw new IOException("arquivo ou ZIP maior que 33 MB");out.write(buf,0,n);}
+                byte[] bytes=RomImage.decode(out.toByteArray(),name);
+                machine.load(bytes);romName=name;hasRom=true;status="ROM reconhecida; compatibilidade depende do núcleo parcial";toast="ROM reconhecida e enviada ao núcleo original.";
+            }catch(Exception e){hasRom=false;machine.reset();toast="ROM não reconhecida: "+e.getMessage();}
             invalidate();
-        }
-        byte[] decodeSmd(byte[] in)throws IOException{
-            if(in.length<0x420)throw new IOException("arquivo SMD truncado");int payload=in.length-512;byte[] out=new byte[payload];
-            for(int block=0;block<payload;block+=0x4000){int size=Math.min(0x4000,payload-block);int half=size/2;
-                for(int i=0;i<half;i++){out[block+i*2]=in[512+block+half+i];out[block+i*2+1]=in[512+block+i];}
-                if((size&1)!=0)out[block+size-1]=in[512+block+size-1];
-            }return out;
         }
         void layout(){W=getWidth()/d;H=getHeight()/d;sx=0;sy=0;sw=W;sh=H;joyX=Math.max(48,W*.095f);joyY=H*.72f;joyR=Math.min(37,H*.095f);faceX=Math.min(W-48,W*.905f);faceY=H*.72f;faceR=Math.min(26,H*.075f);}
         @Override protected void onDraw(Canvas raw){super.onDraw(raw);raw.save();raw.scale(d,d);layout();Canvas g=raw;
             machine.updatePad(a,b,cButton,start,left,right,up,down);if(hasRom&&!machine.stopped)machine.step(1200);machine.vdp.render();refreshVideo();if(hasRom&&machine.stopped)status="Parou em opcode ainda não suportado: "+machine.status;
             g.drawColor(0xff05070a);
             if(!cheatScreen){p.setColor(0xff000000);g.drawRect(sx,sy,sx+sw,sy+sh,p);p.setFilterBitmap(false);g.drawBitmap(video,null,new RectF(sx,sy,sx+sw,sy+sh),p);
-                if(!hasRom||machine.stopped){p.setColor(0xcc080b10);g.drawRect(sx,sy+sh*.40f,sx+sw,sy+sh*.60f,p);p.setColor(white);p.setTextAlign(Paint.Align.CENTER);p.setTextSize(Math.min(14,sh*.06f));String line=hasRom?"ESTA ROM USA INSTRUÇÕES AINDA NÃO SUPORTADAS":"SELECIONE UMA ROM NO MENU";g.drawText(line,W/2,sy+sh*.49f,p);p.setTextSize(Math.min(10,sh*.04f));g.drawText(hasRom?machine.status:"O núcleo próprio ainda não executa jogos comerciais",W/2,sy+sh*.55f,p);p.setTextAlign(Paint.Align.LEFT);}
+                if(!hasRom||machine.stopped){p.setColor(0xcc080b10);g.drawRect(sx,sy+sh*.40f,sx+sw,sy+sh*.60f,p);p.setColor(white);p.setTextAlign(Paint.Align.CENTER);p.setTextSize(Math.min(14,sh*.06f));String line=hasRom?"EXECUÇÃO PAROU — NÚCLEO INCOMPLETO":"SELECIONE UMA ROM NO MENU";g.drawText(line,W/2,sy+sh*.49f,p);p.setTextSize(Math.min(10,sh*.04f));String detail=hasRom?machine.status:"Compatibilidade geral ainda não implementada";g.drawText(ellipsize(detail,(int)(W/9)),W/2,sy+sh*.55f,p);p.setTextAlign(Paint.Align.LEFT);}
                 drawJoystick(g);drawFaceButtons(g);drawMenuButton(g);
             }else drawCheatPage(g);
             if(!toast.isEmpty()){p.setColor(white);p.setTextSize(10);p.setTextAlign(Paint.Align.CENTER);g.drawText(ellipsize(toast,(int)(W/7)),W/2,H-10,p);p.setTextAlign(Paint.Align.LEFT);}
