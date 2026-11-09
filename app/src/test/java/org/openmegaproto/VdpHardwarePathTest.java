@@ -10,7 +10,7 @@ public class VdpHardwarePathTest {
         for(int i=0;i<words.length;i++){rom[8+i*2]=(byte)(words[i]>>>8);rom[9+i*2]=(byte)words[i];}
         return rom;
     }
-    private int[] moveWord(int value,int address){return new int[]{0x33fc,value,address>>>16,address};}
+    private int[] moveWord(int value,int address){return new int[]{0x33fc,value,(address>>>16)&0xffff,address&0xffff};}
     private int[] append(int[] a,int[] b){int[] r=new int[a.length+b.length];System.arraycopy(a,0,r,0,a.length);System.arraycopy(b,0,r,a.length,b.length);return r;}
 
     @Test public void cpuCommandsWriteVramCramAndVscrollAndRenderPlanePixel(){
