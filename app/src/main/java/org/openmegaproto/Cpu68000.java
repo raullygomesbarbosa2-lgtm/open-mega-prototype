@@ -28,7 +28,7 @@ final class Cpu68000 {
         if(op==0x007c||op==0x027c||op==0x0a7c){int imm=fetch16();if(op==0x007c)sr|=imm;else if(op==0x027c)sr&=imm;else sr^=imm;sr&=0xffff;return;}
         // DBcc uses a signed word displacement relative to the address after
         // the extension word; it decrements only the low word and never flags.
-        if((op&0xf0f8)==0x50c8){int condition=(op>>>8)&15,reg=op&7;int disp=(short)fetch16();if(!cond(condition)){int low=(d[reg]-1)&0xffff;d[reg]=(d[reg]&0xffff0000)|low;if(low!=0xffff)pc=(pc+disp)&0xffffff;}return;}
+        if((op&0xf0f8)==0x50c8){int condition=(op>>>8)&15,reg=op&7,base=pc;int disp=(short)fetch16();if(!cond(condition)){int low=(d[reg]-1)&0xffff;d[reg]=(d[reg]&0xffff0000)|low;if(low!=0xffff)pc=(base+disp)&0xffffff;}return;}
         if((op&0xf0c0)==0x50c0){int condition=(op>>>8)&15;Ea e=new Ea((op>>>3)&7,op&7,1,false);if(!e.memory()&& !e.isReg)bad();e.put(cond(condition)?0xff:0);return;}
         if((op&0xffc0)==0x40c0){Ea e=new Ea((op>>>3)&7,op&7,2,false);if(e.isAddr||e.imm||(((op>>>3)&7)==7&&(op&7)>1))bad();e.put(sr);return;}
         if((op&0xffc0)==0x46c0){Ea e=new Ea((op>>>3)&7,op&7,2,true);if(e.isAddr||(((op>>>3)&7)==7&&(op&7)>4))bad();sr=e.get()&0xffff;return;}
