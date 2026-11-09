@@ -30,7 +30,7 @@ final class Cpu68000 {
         // the extension word; it decrements only the low word and never flags.
         if((op&0xf0f8)==0x50c8){int condition=(op>>>8)&15,reg=op&7;int disp=(short)fetch16();if(!cond(condition)){int low=(d[reg]-1)&0xffff;d[reg]=(d[reg]&0xffff0000)|low;if(low!=0xffff)pc=(pc+disp)&0xffffff;}return;}
         if((op&0xf0c0)==0x50c0){int condition=(op>>>8)&15;Ea e=new Ea((op>>>3)&7,op&7,1,false);if(!e.memory()&& !e.isReg)bad();e.put(cond(condition)?0xff:0);return;}
-        if((op&0xffc0)==0x40c0){Ea e=new Ea((op>>>3)&7,op&7,2,false);if(!e.memory()||(((op>>>3)&7)==7&&(op&7)>1))bad();e.put(sr);return;}
+        if((op&0xffc0)==0x40c0){Ea e=new Ea((op>>>3)&7,op&7,2,false);if(e.isAddr||e.imm||(((op>>>3)&7)==7&&(op&7)>1))bad();e.put(sr);return;}
         if((op&0xffc0)==0x46c0){Ea e=new Ea((op>>>3)&7,op&7,2,true);if(e.isAddr||(((op>>>3)&7)==7&&(op&7)>4))bad();sr=e.get()&0xffff;return;}
         if(op==0x4e75){pc=(bus.read16(a[7])<<16)|bus.read16(a[7]+2);a[7]=(a[7]+4)&0xffffff;return;}
         if((op&0xfff8)==0x4e58){int r=op&7;a[7]=a[r]&0xffffff;a[r]=(short)bus.read16(a[7]);a[7]=(a[7]+2)&0xffffff;return;}
@@ -42,8 +42,8 @@ final class Cpu68000 {
         int family=op&0xf000;
         if(family==0x9000||family==0xd000){int mode=(op>>>3)&7,reg=op&7,opmode=(op>>>6)&7,dn=(op>>>9)&7;boolean sub=family==0x9000;
             if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea e=new Ea(mode,reg,size,true);int value=e.get();a[dn]=(sub?a[dn]-value:a[dn]+value)&0xffffff;return;}
-            if(opmode<=2){int size=opmode==0?1:opmode==1?2:4;int rhs=d[dn]&mask(size);Ea e=new Ea(mode,reg,size,false);if(e.isAddr||e.imm)bad();int lhs=e.get(),result=sub?lhs-rhs:lhs+rhs;e.put(result);arith(lhs,rhs,result,size,!sub);return;}
-            if(opmode>=4&&opmode<=6){int size=opmode==4?1:opmode==5?2:4;Ea e=new Ea(mode,reg,size,true);int lhs=d[dn]&mask(size),rhs=e.get(),result=sub?lhs-rhs:lhs+rhs;d[dn]=(d[dn]&~mask(size))|(result&mask(size));arith(lhs,rhs,result,size,!sub);return;}
+            if(opmode<=2){int size=opmode==0?1:opmode==1?2:4;Ea e=new Ea(mode,reg,size,true);int rhs=e.get(),lhs=d[dn]&mask(size),result=sub?lhs-rhs:lhs+rhs;d[dn]=(d[dn]&~mask(size))|(result&mask(size));arith(lhs,rhs,result,size,!sub);return;}
+            if(opmode>=4&&opmode<=6){int size=opmode==4?1:opmode==5?2:4;Ea e=new Ea(mode,reg,size,false);if(e.isAddr||e.imm)bad();int rhs=d[dn]&mask(size),lhs=e.get(),result=sub?lhs-rhs:lhs+rhs;e.put(result);arith(lhs,rhs,result,size,!sub);return;}
         }
         if(op==0x4e72){sr=fetch16();stopped=true;return;}
         // MOVEM: bulk transfer of the 16 68000 registers using the encoded register mask.
