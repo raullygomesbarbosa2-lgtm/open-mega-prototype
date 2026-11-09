@@ -90,8 +90,64 @@ final class Vdp {
             }
             pixels[y*WIDTH+x]=color[0];
         }
+        if(display)renderSprites();
         renderedFrames++;
     }
+    /**
+     * Draw linked-list mode-5 sprites from the H32/H40 SAT. Coordinates use the -128
+     * screen origin, entries are Y/size-link/attributes/X, and multi-tile patterns are
+     * row-major. Model per-line sprite evaluation and sprite-to-sprite list priority.
+     * Sprite/plane priority arbitration, masking, collisions, and VDP overflow flags are
+     * intentionally outside this partial renderer.
+     */
+    private void renderSprites(){
+        boolean h40=(regs[12]&1)!=0;
+        int satBase=(regs[5]&(h40?0x7e:0x7f))<<9;
+        int[] order=new int[h40?80:64];
+        boolean[] visited=new boolean[128];
+        int count=0,index=0;
+        while(count<order.length && index<128 && !visited[index]){
+            visited[index]=true;
+            int entry=satBase+index*8;
+            int sizeLink=readWord(entry+2);
+            order[count++]=index;
+            index=sizeLink&0x7f;
+            if(index==0)break;
+        }
+        int[] lineSprites=new int[HEIGHT];
+        boolean[][] evaluated=new boolean[count][HEIGHT];
+        int lineLimit=h40?20:16;
+        // First entries in linked-list traversal win the scanline evaluation slots.
+        for(int n=0;n<count;n++){
+            int entry=satBase+order[n]*8;
+            int yWord=readWord(entry), sizeLink=readWord(entry+2);
+            int spriteY=(yWord&0x1ff)-128, height=(((sizeLink>>>8)&3)+1)*8;
+            for(int sy=Math.max(0,spriteY);sy<Math.min(HEIGHT,spriteY+height);sy++){
+                if(lineSprites[sy]++<lineLimit)evaluated[n][sy]=true;
+            }
+        }
+        // Later entries are painted first so earlier linked sprites appear in front.
+        for(int n=count-1;n>=0;n--){
+            int entry=satBase+order[n]*8;
+            int yWord=readWord(entry), sizeLink=readWord(entry+2), attr=readWord(entry+4), xWord=readWord(entry+6);
+            int spriteY=(yWord&0x1ff)-128, spriteX=(xWord&0x1ff)-128;
+            int tileW=((sizeLink>>>10)&3)+1, tileH=((sizeLink>>>8)&3)+1;
+            int width=tileW*8,height=tileH*8;
+            for(int sy=Math.max(0,spriteY);sy<Math.min(HEIGHT,spriteY+height);sy++){
+                if(!evaluated[n][sy])continue;
+                int py=sy-spriteY;
+                if((attr&0x1000)!=0)py=height-1-py;
+                for(int sx=Math.max(0,spriteX);sx<Math.min(WIDTH,spriteX+width);sx++){
+                    int px=sx-spriteX;
+                    if((attr&0x0800)!=0)px=width-1-px;
+                    int tile=(attr&0x7ff)+(py>>3)*tileW+(px>>3);
+                    int color=tilePixel(tile,px&7,py&7);
+                    if(color!=0)pixels[sy*WIDTH+sx]=cramColor(((attr>>>13)&3)*16+color);
+                }
+            }
+        }
+    }
+    private int readWord(int address){return (readVram(address)<<8)|readVram(address+1);}
     /** Deterministic generated pattern for renderer tests, not a game image. */
     void loadDiagnosticPattern(){
         reset();writeRegister(1,0x40);
