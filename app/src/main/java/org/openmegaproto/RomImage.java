@@ -74,7 +74,7 @@ final class RomImage {
                 boolean knownRomName = n.endsWith(".bin") || n.endsWith(".gen") || n.endsWith(".md") || n.endsWith(".smd");
                 try {
                     byte[] decoded = decode(candidate, n);
-                    if (!knownRomName && !plausibleVectors(decoded,0) && !hasSegaHeader(decoded,0)) continue;
+                    if (!knownRomName && !validResetVectors(decoded,0) && !hasSegaHeader(decoded,0)) continue;
                     if (found != null) throw new IOException("ZIP contém mais de uma ROM; compacte uma ROM por arquivo");
                     found = decoded;
                 } catch (IOException ex) {
