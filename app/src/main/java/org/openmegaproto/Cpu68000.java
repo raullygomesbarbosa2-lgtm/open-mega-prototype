@@ -28,13 +28,13 @@ final class Cpu68000 {
             boolean memoryToRegs=(op&0x0400)!=0;int size=(op&0x0040)!=0?4:2;int mask=fetch16();
             if(memoryToRegs?(mode==4):(mode==3))bad();
             int[] savedD=d.clone(),savedA=a.clone();int originalEa=a[eaReg];
-            Ea ea=new Ea(mode,eaReg,4,!memoryToRegs);int addr=ea.addr;
+            Ea ea=new Ea(mode,eaReg,size,!memoryToRegs);int addr=ea.addr;
             if(!ea.memory())bad();
             if(mode==4){ // Ea's constructor performed one predecrement; MOVEM decrements per transferred register.
                 addr=originalEa;
                 for(int bit=0;bit<16;bit++)if((mask&(1<<bit))!=0){addr=(addr-size)&0xffffff;a[eaReg]=addr;int idx=15-bit;int value=idx<8?savedD[idx]:savedA[idx-8];if(size==2)bus.write16(addr,value);else{bus.write16(addr,value>>>16);bus.write16(addr+2,value);}}
             }else if(memoryToRegs){
-                addr=(mode==3?a[eaReg]-inc(eaReg,4):addr)&0xffffff; // postincrement EA has advanced by one long; restore starting address.
+                addr=(mode==3?a[eaReg]-inc(eaReg,size):addr)&0xffffff; // restore the EA's auto-increment before iterating the register list.
                 for(int idx=0;idx<16;idx++)if((mask&(1<<idx))!=0){int value=size==2?(short)bus.read16(addr):(bus.read16(addr)<<16)|bus.read16(addr+2);addr=(addr+size)&0xffffff;if(idx<8)d[idx]=value;else a[idx-8]=value;}
                 if(mode==3)a[eaReg]=addr;
             }else{
