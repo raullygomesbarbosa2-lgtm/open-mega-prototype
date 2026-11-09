@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 /** CPU-to-port integration regressions for a subset of VDP command/render behavior. */
 public class VdpHardwarePathTest {
     private byte[] program(int... words) {
-        byte[] rom=new byte[0x400]; rom[3]=(byte)0xff; rom[7]=8;
+        byte[] rom=new byte[0x400]; rom[1]=(byte)0xff; rom[2]=(byte)0xff; rom[7]=8;
         for(int i=0;i<words.length;i++){rom[8+i*2]=(byte)(words[i]>>>8);rom[9+i*2]=(byte)words[i];}
         return rom;
     }
