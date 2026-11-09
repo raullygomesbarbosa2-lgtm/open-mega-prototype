@@ -22,6 +22,30 @@ final class Cpu68000 {
     void execute(int op){
         if(op==0x4e71)return;
         if(op==0x4e72){sr=fetch16();stopped=true;return;}
+        // Immediate operations on the condition-code register are distinct from
+        // the general immediate-EA encoding (and appear in real reset code).
+        if(op==0x003c||op==0x023c||op==0x0a3c){int imm=fetch16()&0x1f;int ccr=sr&0x1f;if(op==0x003c)ccr|=imm;else if(op==0x023c)ccr&=imm;else ccr^=imm;sr=(sr&~0x1f)|ccr;return;}
+        if(op==0x007c||op==0x027c||op==0x0a7c){int imm=fetch16();if(op==0x007c)sr|=imm;else if(op==0x027c)sr&=imm;else sr^=imm;sr&=0xffff;return;}
+        // DBcc uses a signed word displacement relative to the address after
+        // the extension word; it decrements only the low word and never flags.
+        if((op&0xf0f8)==0x50c8){int condition=(op>>>8)&15,reg=op&7;int disp=(short)fetch16();if(!cond(condition)){int low=(d[reg]-1)&0xffff;d[reg]=(d[reg]&0xffff0000)|low;if(low!=0xffff)pc=(pc+disp)&0xffffff;}return;}
+        if((op&0xf0c0)==0x50c0){int condition=(op>>>8)&15;Ea e=new Ea((op>>>3)&7,op&7,1,false);if(!e.memory()&& !e.isReg)bad();e.put(cond(condition)?0xff:0);return;}
+        if((op&0xffc0)==0x40c0){Ea e=new Ea((op>>>3)&7,op&7,2,false);if(!e.memory()||(((op>>>3)&7)==7&&(op&7)>1))bad();e.put(sr);return;}
+        if((op&0xffc0)==0x46c0){Ea e=new Ea((op>>>3)&7,op&7,2,true);if(e.isAddr||(((op>>>3)&7)==7&&(op&7)>4))bad();sr=e.get()&0xffff;return;}
+        if(op==0x4e75){pc=(bus.read16(a[7])<<16)|bus.read16(a[7]+2);a[7]=(a[7]+4)&0xffffff;return;}
+        if((op&0xfff8)==0x4e58){int r=op&7;a[7]=a[r]&0xffffff;a[r]=(short)bus.read16(a[7]);a[7]=(a[7]+2)&0xffffff;return;}
+        if((op&0xfff8)==0x4e50){int r=op&7;push32(a[r]);a[r]=a[7];a[7]=(a[7]+(short)fetch16())&0xffffff;return;}
+        if(op==0x4e70||op==0x4e73||op==0x4e76||op==0x4e77||(op&0xfff0)==0x4e40)bad();
+        if((op&0xfff8)==0x4e60||(op&0xfff8)==0x4e68){int r=op&7;if((sr&0x2000)==0)bad();if((op&8)==0)a[r]=a[7];else a[7]=a[r]&0xffffff;return;}
+        // ADD/SUB register and memory forms, excluding address-register forms
+        // (handled separately below). The arithmetic core maintains X/N/Z/V/C.
+        int family=op&0xf000;
+        if(family==0x9000||family==0xd000){int mode=(op>>>3)&7,reg=op&7,opmode=(op>>>6)&7,dn=(op>>>9)&7;boolean sub=family==0x9000;
+            if(opmode==3||opmode==7){int size=opmode==3?2:4;Ea e=new Ea(mode,reg,size,true);int value=e.get();a[dn]=(sub?a[dn]-value:a[dn]+value)&0xffffff;return;}
+            if(opmode<=2){int size=opmode==0?1:opmode==1?2:4;int rhs=d[dn]&mask(size);Ea e=new Ea(mode,reg,size,false);if(e.isAddr||e.imm)bad();int lhs=e.get(),result=sub?lhs-rhs:lhs+rhs;e.put(result);arith(lhs,rhs,result,size,!sub);return;}
+            if(opmode>=4&&opmode<=6){int size=opmode==4?1:opmode==5?2:4;Ea e=new Ea(mode,reg,size,true);int lhs=d[dn]&mask(size),rhs=e.get(),result=sub?lhs-rhs:lhs+rhs;d[dn]=(d[dn]&~mask(size))|(result&mask(size));arith(lhs,rhs,result,size,!sub);return;}
+        }
+        if(op==0x4e72){sr=fetch16();stopped=true;return;}
         // MOVEM: bulk transfer of the 16 68000 registers using the encoded register mask.
         // Predecrement uses the 68000's reversed mask order; postincrement updates An only once all reads finish.
         if((op&0xfb80)==0x4880){int mode=(op>>>3)&7,eaReg=op&7;if(mode>=2 && !(mode==7&&eaReg>3)){
