@@ -44,14 +44,14 @@ public class Cpu68000Test {
   c.d[0]=1;c.d[1]=0x0000ffff;
   c.step(1);assertEquals(0x1f,c.sr&0x1f);
   c.step(1);assertEquals(0x1e,c.sr&0x1f);
-  c.step(1);assertEquals(0,c.d[1]&0xffff);assertEquals(0x4,c.sr&0x0f);
+  c.step(1);assertEquals(0,c.d[1]&0xffff);assertEquals(0x15,c.sr&0x1f);
   c.step(1);assertEquals(1,c.d[0]&0xffff); // 1 - 0
   c.step(1);assertEquals(12,c.pc);assertEquals(1,c.d[0]&0xffff);
   c.step(1);assertEquals(12,c.pc);assertEquals(0,c.d[0]&0xffff);
   c.step(1);assertEquals(16,c.pc);assertEquals(0xffff,c.d[0]&0xffff);
  }
  @Test public void rtsReturnsToLongAddressAndRestoresStack(){
-  Mem m=new Mem();Cpu68000 c=cpu(m,0x4e75);m.write16(0x7fffc,0);m.write16(0x7fffe,0x1234);c.step(1);assertEquals(0x1234,c.pc);assertEquals(0x80000,c.a[7]);
+  Mem m=new Mem();Cpu68000 c=cpu(m,0x4e75);m.write16(0x80000,0);m.write16(0x80002,0x1234);c.step(1);assertEquals(0x1234,c.pc);assertEquals(0x80004,c.a[7]);
  }
  @Test public void movemWordLoadsSignExtendedAndPostincrementsBaseOnce(){
   Mem m=new Mem();m.write16(0x300,0x8001);m.write16(0x302,0x7fff);
