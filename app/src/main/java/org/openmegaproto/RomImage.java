@@ -24,23 +24,29 @@ final class RomImage {
         boolean smdNamed = name.endsWith(".smd");
         if (couldBeSmd(input)) {
             byte[] deinterleaved = decodeSmd(input);
-            // Extensionless and misnamed copier dumps are detected from their payload,
-            // not just the optional 512-byte SMD header/signature.
-            if (smdNamed || plausibleVectors(deinterleaved, 0) || hasSegaHeader(deinterleaved, 0))
-                input = deinterleaved;
+            // Do not trust the extension alone: only choose SMD decoding when the
+            // deinterleaved payload has valid 68000 reset vectors or a SEGA header.
+            boolean decodedRecognizable = validResetVectors(deinterleaved, 0)
+                    || hasSegaHeader(deinterleaved, 0);
+            boolean linearRecognizable = validResetVectors(input, 0)
+                    || hasSegaHeader(input, 0);
+            if (decodedRecognizable && !linearRecognizable) input = deinterleaved;
+            else if (smdNamed && !linearRecognizable)
+                throw new IOException("SMD: vetores/header não reconhecidos após deinterleave; arquivo pode estar truncado ou não ser SMD");
         } else if (smdNamed) {
             throw new IOException("SMD truncado ou com tamanho inválido");
         }
         if (input.length < 0x200) throw new IOException("imagem ROM truncada ou curta demais (menos de 512 bytes)");
-        boolean knownExtension = name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd");
-        if (!knownExtension && !plausibleVectors(input,0) && !hasSegaHeader(input,0)
-                && !(input.length > 0x400 && (plausibleVectors(input,0x200) || hasSegaHeader(input,0x200))))
-            throw new IOException("conteúdo não parece uma ROM Mega Drive (vetores 68000 e cabeçalho SEGA ausentes)");
 
-        // Some dumps include a 512-byte copier header. Strip it only when the
-        // payload has stronger Mega Drive markers than the original prefix.
-        if (input.length > 0x400 && ((!plausibleVectors(input,0) && plausibleVectors(input,0x200))
-                || (!hasSegaHeader(input,0) && hasSegaHeader(input,0x200)))) input = slice(input,0x200,input.length);
+        // A 512-byte copier header has no universal signature. Strip it only if
+        // offset 0x200 has reset vectors acceptable to Machine.load and offset 0
+        // does not. A SEGA string alone is not enough to discard user data.
+        if (input.length > 0x200 && !validResetVectors(input, 0)
+                && validResetVectors(input, 0x200)) input = slice(input, 0x200, input.length);
+
+        boolean knownExtension = name.endsWith(".bin") || name.endsWith(".gen") || name.endsWith(".md") || name.endsWith(".smd");
+        if (!knownExtension && !validResetVectors(input,0) && !hasSegaHeader(input,0))
+            throw new IOException("conteúdo não parece ROM Mega Drive: vetores verificados em 0x000 e 0x200; nenhum reset válido nem cabeçalho SEGA no offset 0x000");
         return input;
     }
 
@@ -100,10 +106,16 @@ final class RomImage {
         return out;
     }
 
-    private static boolean plausibleVectors(byte[] data,int offset) {
-        if(data.length<offset+8)return false;
-        long sp=u32(data,offset),pc=u32(data,offset+4);
-        return (sp&1)==0&&(pc&1)==0&&pc>=8&&pc<data.length-offset&&(sp>=0x00ff0000L&&sp<=0x00ffffffL||sp>=0x00e00000L&&sp<0x00e10000L);
+    private static boolean validResetVectors(byte[] data, int offset) {
+        if (data.length < offset + 8) return false;
+        long sp = u32(data, offset) & 0x00ffffffL;
+        long pc = u32(data, offset + 4) & 0x00ffffffL;
+        int payloadLength = data.length - offset;
+        return (sp & 1) == 0
+                && ((sp >= 0x00ff0000L && sp <= 0x00ffffffL)
+                    || (sp >= 0x00e00000L && sp < 0x00e10000L))
+                && (pc & 1) == 0 && pc >= 8
+                && pc < Math.min(payloadLength, 0x400000);
     }
     private static long u32(byte[] b,int p){return ((long)(b[p]&255)<<24)|((long)(b[p+1]&255)<<16)|((long)(b[p+2]&255)<<8)|(b[p+3]&255L);}
     private static boolean hasSegaHeader(byte[] data, int offset) {

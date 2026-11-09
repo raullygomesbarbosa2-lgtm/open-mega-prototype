@@ -42,6 +42,7 @@ public class RomImageTest {
 
     @Test public void deinterleavesSmdBlocksToNormal68000ByteOrder() throws Exception {
         byte[] raw=validRom(0x4000);for(int i=0;i<raw.length;i++)raw[i]=(byte)(i*7+3);
+        raw[0]=0;raw[1]=(byte)0xff;raw[2]=(byte)0xff;raw[3]=0;raw[4]=0;raw[5]=0;raw[6]=0;raw[7]=8;
         byte[] smd=new byte[512+0x4000];System.arraycopy("SEGA".getBytes("US-ASCII"),0,smd,8,4);
         for(int i=0;i<0x2000;i++){smd[512+0x2000+i]=raw[i*2];smd[512+i]=raw[i*2+1];}
         assertArrayEquals(raw,RomImage.decode(smd,"dump.smd"));
@@ -79,6 +80,26 @@ public class RomImageTest {
         byte[] raw=validRom(0x4000);byte[] smd=new byte[512+0x4000];
         for(int i=0;i<0x2000;i++){smd[512+0x2000+i]=raw[i*2];smd[512+i]=raw[i*2+1];}
         assertArrayEquals(raw,RomImage.decode(smd,"copier_dump"));
+    }
+
+    @Test public void stripsCopierHeaderWhenObservedInvalidPrefixHasValidPayloadVectors() throws Exception {
+        byte[] game = validRom(0x800);
+        byte[] wrapped = new byte[0x200 + game.length];
+        // Reproduce the screenshot's invalid prefix shape: SP=0, PC=0x50000200.
+        wrapped[4] = 0x50; wrapped[5] = 0; wrapped[6] = 2; wrapped[7] = 0;
+        System.arraycopy(game, 0, wrapped, 0x200, game.length);
+        assertArrayEquals(game, RomImage.decode(wrapped, "mystery.data"));
+    }
+
+    @Test public void doesNotStripCopierOffsetBasedOnSegaTextAlone() throws Exception {
+        byte[] data = new byte[0x600];
+        data[0x300]='S'; data[0x301]='E'; data[0x302]='G'; data[0x303]='A';
+        assertArrayEquals(data, RomImage.decode(data, "dump.bin"));
+    }
+
+    @Test public void doesNotMisdecodeLinearRomJustBecauseSmdExtensionAndLengthFit() throws Exception {
+        byte[] data = validRom(0x4000);
+        assertArrayEquals(data, RomImage.decode(data, "actually-linear.smd"));
     }
 
     @Test public void malformedZipMagicGetsHelpfulDiagnostic() throws Exception {
