@@ -45,5 +45,5 @@ final class Cpu68000 {
     void push32(int v){a[7]=(a[7]-4)&0xffffff;bus.write16(a[7],v>>>16);bus.write16(a[7]+2,v);}
     void logic(int value,int size){int v=value&mask(size);sr&=~0x0f;if(v==0)sr|=4;if((v&(size==1?0x80:size==2?0x8000:0x80000000))!=0)sr|=8;}
     void compare(int lhs,int rhs,int result,int size){int xbit=sr&0x10;arith(lhs,rhs,result,size,false);sr=(sr&~0x10)|xbit;}
-    void arith(int lhs,int rhs,int result,int size,boolean add){int m=mask(size),signBit=size==1?0x80:size==2?0x8000:0x80000000;int x=lhs&m,y=rhs&m,r=result&m;boolean carry=add?((long)x+(long)y)>m:x<y;boolean overflow=add?((~(x^y)&(x^r)&signBit)!=0):(((x^y)&(x^r)&signBit)!=0);sr&=~0x1f;if(r==0)sr|=4;if((r&signBit)!=0)sr|=8;if(overflow)sr|=2;if(carry)sr|=0x11;}
+    void arith(int lhs,int rhs,int result,int size,boolean add){int m=mask(size),signBit=size==1?0x80:size==2?0x8000:0x80000000;int x=lhs&m,y=rhs&m,r=result&m;long unsignedMask=size==4?0xffffffffL:(long)m;boolean carry=add?((x&0xffffffffL)+(y&0xffffffffL))>unsignedMask:size==4?((x&0xffffffffL)<(y&0xffffffffL)):x<y;boolean overflow=add?((~(x^y)&(x^r)&signBit)!=0):(((x^y)&(x^r)&signBit)!=0);sr&=~0x1f;if(r==0)sr|=4;if((r&signBit)!=0)sr|=8;if(overflow)sr|=2;if(carry)sr|=0x11;}
 }
